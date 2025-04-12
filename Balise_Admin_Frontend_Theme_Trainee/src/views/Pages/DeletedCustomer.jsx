@@ -21,8 +21,8 @@ const DeletedCustomer = () => {
 
   const fetchManageUserDetails = async () => {
     try {
-      const response = await axios.get(`${Url}/deletedUser`);
-      const userDetail = response.data.data.user_detail;
+      const response = await axios.get(`${Url}/api/customers/deleted`);
+      const userDetail = response.data;
 
       console.log('Response data:', userDetail);
 
@@ -52,9 +52,6 @@ const DeletedCustomer = () => {
     filterResults(term);
   };
 
-
-
-
   const filterResults = (searchTerm) => {
     // Ensure searchTerm is a string and handle cases where it might be null or undefined
     const lowercasedFilter = (searchTerm || '').toLowerCase();
@@ -64,14 +61,10 @@ const DeletedCustomer = () => {
       // Check if username and email exist and are strings before calling toLowerCase
       const username = (user.username || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
-      const createtime = user.createtime ? formatDate(user.createtime).toLowerCase() : '';
+      const createtime = user.createdAt ? formatDate(user.createdAt).toLowerCase() : '';
 
       // Return whether any of the conditions match the lowercased filter
-      return (
-        username.includes(lowercasedFilter) ||
-        email.includes(lowercasedFilter) ||
-        createtime.includes(lowercasedFilter)
-      );
+      return username.includes(lowercasedFilter) || email.includes(lowercasedFilter) || createtime.includes(lowercasedFilter);
     });
 
     // Update the state with the filtered results
@@ -141,28 +134,26 @@ const DeletedCustomer = () => {
                           <DropdownButton
                             title="Action"
                             id={`dropdown-${user.id}`}
-                            onSelect={(eventKey) => handleActionChange(index, eventKey, user.user_id, user.status)}
+                            onSelect={(eventKey) => handleActionChange(index, eventKey, user.id, user.status)}
                             className="btn-action"
                           >
+                            {/* here i have done some changes */}
+
                             <Dropdown.Item
                               eventKey="View"
-                              id={`view-${user.user_id}`}
+                              id={`${user.id}`}
                               onClick={() => {
-                                setUserToDelete(user.user_id);
+                                setUserToDelete(user.id);
                               }}
                             >
                               {/* <FaEye className="icon" style={{ marginRight: '8px' }} />
                               View */}
-                              <Link
-                                to={`${APP_PREFIX_PATH}/view-deleted-customer/${encode(user.user_id)}`}
-                                className="dropdown-item"
-                                // onClick={() => handleActionChange(index, 'View')}
-                                id={`view-${user.user_id}`}
-                              >
+                              <Link to={`${APP_PREFIX_PATH}/viewcustomer/${user.id}`}>
                                 <FaEye className="icon" style={{ marginRight: '8px' }} />
                                 View
                               </Link>
                             </Dropdown.Item>
+
                             {/* <Dropdown.Item
                               eventKey="activate"
                               onClick={() => {
@@ -184,7 +175,7 @@ const DeletedCustomer = () => {
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           <img
-                            src={user.image_html ? `${IMAGE_PATH}/${user.image_html}` : `${placeholder}`}
+                            src={user.profilePicture ? `${Url}/uploads/${user.profilePicture}` : `${placeholder}`}
                             alt="image"
                             style={{ width: '50px', height: '50px', borderRadius: '50%' }}
                           />
@@ -192,9 +183,9 @@ const DeletedCustomer = () => {
                         <td style={{ textAlign: 'center' }}>{user.username}</td>
                         <td style={{ textAlign: 'center' }}>{user.email}</td>
                         <td style={{ textAlign: 'center' }}>
-                          {user.status == 1 ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
+                          {user.status === 'active' ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
                         </td>
-                        <td style={{ textAlign: 'center' }}>{formatDate(user.createtime)}</td>
+                        <td style={{ textAlign: 'center' }}>{formatDate(user.createdAt)}</td>
                       </tr>
                     ))}
                     {emptyRows > 0 && (

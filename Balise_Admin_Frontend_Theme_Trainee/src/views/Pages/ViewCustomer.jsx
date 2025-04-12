@@ -4,28 +4,28 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Modal } from 'react-bootstrap';
 import './main.css';
 import placeholder from '../../assets/images/placeholder.jpg'; // Adjust the import path accordingly
-import { Url, IMAGE_PATH,APP_PREFIX_PATH } from '../../config/constant'; // Adjust the import paths accordingly
+import { Url, IMAGE_PATH, APP_PREFIX_PATH } from '../../config/constant'; // Adjust the import paths accordingly
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import { Breadcrumb } from 'react-bootstrap';
 
 const ViewCustomer = () => {
-  var { user_id } = useParams();
+  var { id } = useParams();
   const [show, setShow] = useState(false);
   const [user, setUser] = useState({});
 
   useEffect(() => {
     axios
-      .get(`${Url}/getViewUser/${user_id}`)
+      .get(`${Url}/api/customers/${id}`)
       .then((response) => {
-        console.log('response hia', response.data.data.user_detail);
-        setUser(response.data.data.user_detail);
+        console.log('response hia', response.data);
+        setUser(response.data);
       })
       .catch((error) => {
         console.error('Error fetching user details:', error);
       });
-  }, [user_id]);
+  }, [id]);
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -37,10 +37,10 @@ const ViewCustomer = () => {
   return (
     <div>
       <Breadcrumb>
-        <Breadcrumb.Item as={Link} to={`${APP_PREFIX_PATH}`+'/dashboard'}>
+        <Breadcrumb.Item as={Link} to={`${APP_PREFIX_PATH}` + '/dashboard'}>
           <i className="feather icon-home" />
         </Breadcrumb.Item>
-        <Breadcrumb.Item as={Link} to={`${APP_PREFIX_PATH}`+'/customer_list'}>
+        <Breadcrumb.Item as={Link} to={`${APP_PREFIX_PATH}` + '/customer_list'}>
           Manage Customer
         </Breadcrumb.Item>
         <Breadcrumb.Item active>View Customer</Breadcrumb.Item>
@@ -53,7 +53,7 @@ const ViewCustomer = () => {
               <Col md={4} style={{ margin: 'auto' }}>
                 <div className="d-flex justify-content-center align-items-center">
                   <img
-                    src={user.image ? `${IMAGE_PATH}/${user.image}` : `${placeholder}`}
+                    src={user.profilePicture ? `${Url}/uploads/${user.profilePicture}` : `${placeholder}`}
                     style={{
                       width: '150px',
                       height: '150px',
@@ -77,7 +77,7 @@ const ViewCustomer = () => {
                           <p>User Name:</p>
                         </div>
                         <div className="col-lg-6 cosntomer-name2">
-                          <p style={{ fontWeight: '500', marginLeft: '0px' }}>{user.name ? user.name : 'NA'}</p>
+                          <p style={{ fontWeight: '500', marginLeft: '0px' }}>{user.username ? user.username : 'NA'}</p>
                         </div>
                       </div>
                       <div className="row">
@@ -94,7 +94,7 @@ const ViewCustomer = () => {
                         </div>
                         <div className="col-lg-6 cosntomer-name2">
                           <p style={{ fontWeight: '500', marginLeft: '0px' }}>
-                            {user.mobile ? '+' + user.phone_code + ' ' + user.mobile : 'NA'}
+                            {user.mobile ? '+' + user.countryCode + ' ' + user.mobile : 'NA'}
                           </p>
                         </div>
                       </div>
@@ -116,7 +116,7 @@ const ViewCustomer = () => {
                               margin: '0'
                             }}
                           >
-                            {user.active_flag === 1 ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
+                            {user.status === 'active' ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
                           </p>
                         </div>
                       </div>
@@ -126,7 +126,7 @@ const ViewCustomer = () => {
                         </div>
                         <div className="col-lg-6 cosntomer-name2">
                           <p style={{ fontWeight: '500', marginLeft: '0px' }}>
-                            {user.gender ? (user.gender == 1 ? 'Woman' : user.gender == 2 ? 'Man' : 'Other') : 'NA'}
+                            {user.gender ? (user.gender === 'female' ? 'Woman' : user.gender === 'male' ? 'Man' : 'Other') : 'NA'}
                           </p>
                         </div>
                       </div>
@@ -145,7 +145,7 @@ const ViewCustomer = () => {
                           <p>Create Date & Time:</p>
                         </div>
                         <div className="col-lg-6 cosntomer-name2">
-                          <p style={{ fontWeight: '500', marginLeft: '0px' }}>{user.createtime ? formatDate(user.createtime) : 'NA'}</p>
+                          <p style={{ fontWeight: '500', marginLeft: '0px' }}>{user.createdAt ? formatDate(user.createdAt) : 'NA'}</p>
                         </div>
                       </div>
                     </div>
@@ -164,7 +164,7 @@ const ViewCustomer = () => {
         <Modal.Header closeButton></Modal.Header>
         <Modal.Body>
           <img
-            src={user.image ? `${IMAGE_PATH}/${user.image}` : `${placeholder}`}
+            src={user.profilePicture ? `${Url}/uploads/${user.profilePicture}` : `${placeholder}`}
             alt="Preview"
             style={{ width: '100%', height: '345px', margin: 'auto', display: 'flex', objectFit: 'cover' }}
           />

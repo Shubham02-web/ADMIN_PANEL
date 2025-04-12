@@ -6,28 +6,26 @@ import { Row, Col, Card, Table } from 'react-bootstrap';
 import { Dropdown, DropdownButton, Form, FormControl } from 'react-bootstrap';
 import { FaEye, FaRegTrashAlt, FaToggleOn } from 'react-icons/fa';
 import TablePagination from '@mui/material/TablePagination';
+
 import './main.css';
 import placeholder from '../../assets/images/placeholder.png';
 import { Breadcrumb } from 'react-bootstrap';
 import axios from 'axios';
 import { Url, IMAGE_PATH, APP_PREFIX_PATH } from '../../config/constant';
 // import { Link } from 'react-router-dom';
-import { encode } from 'base-64';
+// import { encode } from 'base-64';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 
-
 const CustomerList = () => {
-
   const [userDetails, setUserDetails] = useState([]);
   const [filteredUserDetails, setFilteredUserDetails] = useState([]);
   const [userToDelete, setUserToDelete] = useState(null);
   const [userToActivateDeactivate, setUserToActivateDeactivate] = useState(null);
   // const [selectedActions, setSelectedActions] = useState([]);
 
-
   // Function to handle action selection
-  const handleActionChange = (index, eventKey, user_id, status) => {
+  const handleActionChange = (index, eventKey, id, status) => {
     if (eventKey === 'delete') {
       console.log('setUserToDelete', userToDelete);
       Swal.fire({
@@ -39,7 +37,7 @@ const CustomerList = () => {
         cancelButtonText: 'Cancel'
       }).then((result) => {
         if (result.isConfirmed) {
-          deleteUser(user_id);
+          deleteUser(id);
         }
       });
     } else if (eventKey === 'View') {
@@ -54,13 +52,13 @@ const CustomerList = () => {
       Swal.fire({
         icon: 'warning',
         title: 'Are you sure?',
-        text: status === 1 ? 'you want to deactivate this account?' : 'you want to activate this account?',
+        text: status === 'active' ? 'you want to deactivate this account?' : 'you want to activate this account?',
         showCancelButton: true,
         confirmButtonText: 'Ok',
         cancelButtonText: 'Cancel'
       }).then((result) => {
         if (result.isConfirmed) {
-          ActivateDeactivate(user_id, status);
+          ActivateDeactivate(id);
         }
       });
     } else {
@@ -77,13 +75,13 @@ const CustomerList = () => {
     }
   };
 
-  const ActivateDeactivate = (user_id, status) => {
+  const ActivateDeactivate = (id) => {
     // if (userToActivateDeactivate) {
-    const data = { user_id: user_id, status: status == 1 ? (status = 0) : (status = 1) };
-    console.log('user_id check activated', data);
+    // const data = { user_id: user_id, status: status  ? (status = 0) : (status = 1) };
+    // console.log('user_id check activated', data);
 
     axios
-      .post(Url + '/active_deactive', data)
+      .post(Url + `/api/customers/${id}`)
       .then((res) => {
         fetchManageUserDetails();
         console.log('User AD', res);
@@ -108,12 +106,11 @@ const CustomerList = () => {
   };
 
   // Function to delete user
-  const deleteUser = (userid) => {
+  const deleteUser = (id) => {
     // if (userToDelete) {
     //   console.log('user_id check deleted', userToDelete);
-    const data = { user_id: userid };
     axios
-      .post(Url + '/delete_user', data)
+      .delete(Url + `/api/customers/${id}`)
       .then(() => {
         // Update userDetails state to remove the deleted user
         fetchManageUserDetails();
@@ -126,8 +123,8 @@ const CustomerList = () => {
 
   const fetchManageUserDetails = async () => {
     try {
-      const response = await axios.get(`${Url}/manage_user`);
-      const userDetail = response.data.data.user_detail;
+      const response = await axios.get(`${Url}/api/customers`);
+      const userDetail = response.data;
 
       console.log('Response data:', userDetail);
 
@@ -175,20 +172,15 @@ const CustomerList = () => {
       // Check if username and email exist and are strings before calling toLowerCase
       const username = (user.username || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
-      const createtime = user.createtime ? formatDate(user.createtime).toLowerCase() : '';
+      const createtime = user.createdAT ? formatDate(user.createdAT).toLowerCase() : '';
 
       // Return whether any of the conditions match the lowercased filter
-      return (
-        username.includes(lowercasedFilter) ||
-        email.includes(lowercasedFilter) ||
-        createtime.includes(lowercasedFilter)
-      );
+      return username.includes(lowercasedFilter) || email.includes(lowercasedFilter) || createtime.includes(lowercasedFilter);
     });
 
     // Update the state with the filtered results
     setFilteredUserDetails(filtered);
   };
-
 
   function formatDate(date) {
     const padTo2Digits = (num) => num.toString().padStart(2, '0');
@@ -253,22 +245,19 @@ const CustomerList = () => {
                           <DropdownButton
                             title="Action"
                             id={`dropdown-${user.id}`}
-                            onSelect={(eventKey) => handleActionChange(index, eventKey, user.user_id, user.status)}
+                            onSelect={(eventKey) => handleActionChange(index, eventKey, user.id, user.status)}
                             className="btn-action"
                           >
                             <Dropdown.Item
                               eventKey="View"
-                              id={`view-${user.user_id}`}
+                              id={`${user.id}`}
                               onClick={() => {
-                                setUserToDelete(user.user_id);
+                                setUserToDelete(user.id);
                               }}
                             >
                               {/* <FaEye className="icon" style={{ marginRight: '8px' }} />
                               View */}
-                              <Link
-                                to={`${APP_PREFIX_PATH}/viewcustomer/${encode(user.user_id)}`}
-
-                              >
+                              <Link to={`${APP_PREFIX_PATH}/viewcustomer/${user.id}`}>
                                 <FaEye className="icon" style={{ marginRight: '8px' }} />
                                 View
                               </Link>
@@ -276,7 +265,7 @@ const CustomerList = () => {
                             <Dropdown.Item
                               eventKey="activate"
                               onClick={() => {
-                                setUserToActivateDeactivate(user.user_id);
+                                setUserToActivateDeactivate(user.id);
                               }}
                             >
                               <FaToggleOn className="icon" style={{ marginRight: '8px' }} />
@@ -285,7 +274,7 @@ const CustomerList = () => {
                             <Dropdown.Item
                               eventKey="delete"
                               onClick={() => {
-                                setUserToDelete(user.user_id);
+                                setUserToDelete(user.id);
                               }}
                             >
                               <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
@@ -294,7 +283,7 @@ const CustomerList = () => {
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           <img
-                            src={user.image_html ? `${IMAGE_PATH}${user.image_html}` : `${placeholder}`}
+                            src={user.profilePicture ? `${Url}/uploads/${user.profilePicture}` : `${placeholder}`}
                             alt="image"
                             style={{ width: '50px', height: '50px', borderRadius: '50%' }}
                           />
@@ -302,9 +291,9 @@ const CustomerList = () => {
                         <td style={{ textAlign: 'center' }}>{user.username ? user.username : 'NA'}</td>
                         <td style={{ textAlign: 'center' }}>{user.email}</td>
                         <td style={{ textAlign: 'center' }}>
-                          {user.status == 1 ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
+                          {user.status === 'active' ? <p className="btn-active">Active</p> : <p className="btn-deactive">Deactive</p>}
                         </td>
-                        <td style={{ textAlign: 'center' }}>{formatDate(user.createtime)}</td>
+                        <td style={{ textAlign: 'center' }}>{formatDate(user.createdAt)}</td>
                       </tr>
                     ))}
                     {emptyRows > 0 && (

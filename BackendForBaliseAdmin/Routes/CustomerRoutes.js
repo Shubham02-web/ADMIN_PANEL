@@ -11,6 +11,8 @@ import { authenticateToken } from "../Middleware/Auth.js";
 import { isAdmin } from "../Middleware/Auth.js";
 import upload from "../Middleware/Upload.js";
 
+// /api/customers
+
 const customerRouters = express.Router();
 customerRouters.post(
     "/register",

@@ -10,7 +10,6 @@ import '../../../views/Pages/main.css';
 
 import { Url, APP_PREFIX_PATH } from '../../../config/constant';
 
-
 const Signin1 = () => {
   const navigate = useNavigate();
   const [keepSignedIn, setKeepSignedIn] = useState(false);
@@ -21,11 +20,12 @@ const Signin1 = () => {
     const { email, password } = values;
     const data = { action: 'sign-in', email, password, user_type: 0 };
     console.log('data is here:- ', data1);
-    axios.post(`${Url}/signin`, data)
-      .then(res => {
+    axios
+      .post(`${Url}/api/login`, data)
+      .then((res) => {
         setData1(res.data.data);
         if (!res.data.success) {
-          console.log('checkkkk', res)
+          console.log('checkkkk', res);
           if (res.data.key === 'email') {
             Swal.fire({
               icon: 'error',
@@ -48,10 +48,10 @@ const Signin1 = () => {
             text: 'Login Successfully.',
             confirmButtonText: 'Ok'
           }).then(() => {
-            navigate(APP_PREFIX_PATH + "/dashboard");
+            navigate(APP_PREFIX_PATH + '/dashboard');
             localStorage.setItem('token1', res.data.token);
-            localStorage.setItem('userId1', res.data.data.user_arr.user_id);
-            localStorage.setItem('UserType1', res.data.data.user_arr.user_type);
+            localStorage.setItem('userId1', res.data.data.user_arr.id);
+            localStorage.setItem('UserType1', res.data.data.user_arr.type);
             if (keepSignedIn) {
               localStorage.setItem('remember_email1', email);
               localStorage.setItem('remember_password1', password);
@@ -59,11 +59,10 @@ const Signin1 = () => {
               localStorage.removeItem('remember_email1');
               localStorage.removeItem('remember_password1');
             }
-
           });
         }
       })
-      .catch(err => console.error("Error fetching users:", err));
+      .catch((err) => console.error('Error fetching users:', err));
   };
 
   return (
@@ -80,7 +79,7 @@ const Signin1 = () => {
           <Card className="borderless">
             <Card.Body>
               <h4 className="mb-3 f-w-400 text-center">Login</h4>
-              <div className='d-flex justify-content-center'>
+              <div className="d-flex justify-content-center">
                 <img src={logoDark} alt="" className="img-fluid mb-4" style={{ width: '100px' }} />
               </div>
               <AuthLogin handleSubmit={handleSubmit} setKeepSignedIn={setKeepSignedIn} />

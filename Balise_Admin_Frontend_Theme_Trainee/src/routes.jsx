@@ -30,7 +30,6 @@ const renderRoutes = (routes = []) => (
             }
           />
         );
-
       })}
     </Routes>
   </Suspense>
@@ -44,146 +43,145 @@ export const routes = [
   // },
   {
     exact: 'true',
-    path: APP_PREFIX_PATH +'/signin',
+    path: APP_PREFIX_PATH + '/signin',
     element: lazy(() => import('./views/auth/signin/SignIn1'))
   },
   {
     exact: 'true',
-    path: APP_PREFIX_PATH +'/forgot-password-1',
+    path: APP_PREFIX_PATH + '/forgot-password-1',
     element: lazy(() => import('./views/auth/forgot-password/ForgotPassword1'))
   },
   {
     exact: 'true',
-    path: APP_PREFIX_PATH +'/reset-password',
+    path: APP_PREFIX_PATH + '/reset-password',
     element: lazy(() => import('./views/auth/reset-password/ResetPassword1'))
   },
   {
     path: '*',
     layout: AdminLayout,
     routes: [
-      
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/dashboard',
+        path: APP_PREFIX_PATH + '/dashboard',
         element: lazy(() => import('./views/dashboard'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/customer_list',
+        path: APP_PREFIX_PATH + '/customer_list',
         element: lazy(() => import('./views/Pages/CustomerList'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/deleted_list',
+        path: APP_PREFIX_PATH + '/deleted_list',
         element: lazy(() => import('./views/Pages/DeletedCustomer'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/viewcustomer/:user_id',
+        path: APP_PREFIX_PATH + '/viewcustomer/:id',
         element: lazy(() => import('./views/Pages/ViewCustomer'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/view-deleted-customer/:user_id',
+        path: APP_PREFIX_PATH + '/view-deleted-customer/:id',
         element: lazy(() => import('./views/Pages/ViewDeletedCustomer'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage_banner',
+        path: APP_PREFIX_PATH + '/manage_banner',
         element: lazy(() => import('./views/Pages/ManageBanner'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/view_banner/:banner_id',
+        path: APP_PREFIX_PATH + '/view_banner/:id',
         element: lazy(() => import('./views/Pages/ViewBanner'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage_category',
+        path: APP_PREFIX_PATH + '/manage_category',
         element: lazy(() => import('./views/Pages/ManageCategory'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage-contact',
+        path: APP_PREFIX_PATH + '/manage-contact',
         element: lazy(() => import('./views/Pages/ManageContact'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage-broadcast',
+        path: APP_PREFIX_PATH + '/manage-broadcast',
         element: lazy(() => import('./views/Pages/ManageBroadcast'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage_banner',
+        path: APP_PREFIX_PATH + '/manage_banner',
         element: lazy(() => import('./views/Pages/ManageBanner'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage-booking',
+        path: APP_PREFIX_PATH + '/manage-booking',
         element: lazy(() => import('./views/Pages/ManageBooking'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/manage-content',
+        path: APP_PREFIX_PATH + '/manage-content',
         element: lazy(() => import('./views/Pages/ManageContent'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/customer-report',
+        path: APP_PREFIX_PATH + '/customer-report',
         element: lazy(() => import('./views/Pages/CustomerReport'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/customer-ana-report',
+        path: APP_PREFIX_PATH + '/customer-ana-report',
         element: lazy(() => import('./views/Pages/AnalyticsReport'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/profile',
+        path: APP_PREFIX_PATH + '/profile',
         element: lazy(() => import('./views/Pages/Profile'))
       },
       {
         exact: 'true',
-        path:APP_PREFIX_PATH + '/basic/button',
+        path: APP_PREFIX_PATH + '/basic/button',
         element: lazy(() => import('./views/ui-elements/BasicButton'))
       },
       {
         exact: 'true',
-        path:APP_PREFIX_PATH + '/basic/badges',
+        path: APP_PREFIX_PATH + '/basic/badges',
         element: lazy(() => import('./views/ui-elements/BasicBadges'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/basic/breadcrumb-pagination',
+        path: APP_PREFIX_PATH + '/basic/breadcrumb-pagination',
         element: lazy(() => import('./views/ui-elements/BasicBreadcrumbPagination'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/basic/collapse',
+        path: APP_PREFIX_PATH + '/basic/collapse',
         element: lazy(() => import('./views/ui-elements/BasicCollapse'))
       },
 
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/basic/typography',
+        path: APP_PREFIX_PATH + '/basic/typography',
         element: lazy(() => import('./views/ui-elements/BasicTypography'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/basic/tooltip-popovers',
+        path: APP_PREFIX_PATH + '/basic/tooltip-popovers',
         element: lazy(() => import('./views/ui-elements/BasicTooltipsPopovers'))
       },
       {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/sample-page',
+        path: APP_PREFIX_PATH + '/sample-page',
         element: lazy(() => import('./views/extra/SamplePage'))
       },
-        {
+      {
         exact: 'true',
-        path: APP_PREFIX_PATH +'/question',
+        path: APP_PREFIX_PATH + '/question',
         element: lazy(() => import('./views/Pages/ManageQuestion'))
       },
-      
+
       {
         path: '*',
         exact: 'true',
