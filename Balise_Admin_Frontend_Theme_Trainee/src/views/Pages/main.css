@@ -1,0 +1,104 @@
+.btn-active {
+  background: green;
+  padding: 3px 2px;
+  color: #fff;
+  width: 84px;
+  margin: auto;
+  border-radius: 50px;
+}
+
+.btn-deactive {
+  background: red;
+  padding: 3px 2px;
+  color: #fff;
+  width: 84px;
+  margin: auto;
+  border-radius: 50px;
+}
+
+.btn-user {
+  background: #ff9c33;
+  padding: 3px 2px;
+  color: #fff;
+  width: 84px;
+  margin: auto;
+  border-radius: 50px;
+}
+.btn-primary{
+  background-color: #204C91;
+  border:1px solid #204C91;
+}
+.btn-primary:hover{
+  background-color: #204c91e3;
+  border:1px solid #204c91e3;
+}
+.btn-primary.active{
+  background-color: #204c91e3;
+  border:1px solid #204c91e3;
+}
+.btn-pending {
+  background: rgb(235, 183, 14);
+  padding: 3px 2px;
+  color: #fff;
+  width: 84px;
+  margin: auto;
+  border-radius: 50px;
+}
+.nav-tabs .nav-link.active{
+  background: #204c91;
+  color: #fff;
+}
+.nav-tabs .nav-link:hover{
+  border:none;
+  color: #ffffff;
+  background: #204c91e3;
+}
+.nav-tabs .nav-link{
+  color: #204c91e3; 
+}
+@media (max-width: 540px) {
+  .mobile-res {
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .view-user-content .mobile-res {
+    flex-wrap: wrap;
+  }
+
+  .user-detail .cosntomer-name {
+    width: 40%;
+  }
+
+  .user-detail .cosntomer-name2 {
+    width: 60%;
+  }
+
+  .active-btn {
+    /* margin: auto; */
+  }
+}
+
+
+.pcoded-navbar .pcoded-inner-navbar li.pcoded-hasmenu .pcoded-submenu li:after,.pcoded-navbar .pcoded-inner-navbar li.pcoded-hasmenu .pcoded-submenu:after, .pcoded-navbar .pcoded-inner-navbar li.pcoded-hasmenu .pcoded-submenu li > a:before {
+
+  display: none;
+}
+.pcoded-navbar .pcoded-inner-navbar li.pcoded-hasmenu .pcoded-submenu li > a{
+  padding: 10px 7px 8px 37px!important;
+}
+.pcoded-navbar .pcoded-inner-navbar li.pcoded-hasmenu .pcoded-submenu li > a:hover{
+  background: rgb(37 89 171 / 14%)!important;
+  color: #2456a4!important;
+}
+
+.jodit-wysiwyg{
+  height: 250px!important;;
+}
+
+.btn-pending
+{
+  font-size: 0.8rem!important;
+  /* width: 84px !important; */
+}

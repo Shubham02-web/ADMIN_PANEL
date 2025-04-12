@@ -1,0 +1,24 @@
+.btn-content{
+  border: 1px solid #77C3EC!important;
+  color:white;
+  padding: 10px 11px;
+  font-size: 13px;
+  width: 200px;
+background-color: #77C3EC;
+}
+
+.btn-content:hover{
+  background: #1488CC;
+  color: #fff!important;
+ 
+}
+.btn-active {
+  background-color: #0d6efd; /* Adjust this color as needed */
+  color: white;
+  border: none;
+}
+@media(max-width:540px){
+  .form Button {
+      margin-left: 0 !important;
+    }
+}
