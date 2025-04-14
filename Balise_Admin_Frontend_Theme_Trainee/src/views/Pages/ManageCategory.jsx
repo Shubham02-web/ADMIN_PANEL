@@ -17,7 +17,6 @@ import Swal from 'sweetalert2';
 import { Formik, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
-
 const ManageCategory = () => {
   const [catDetails, setcatDetails] = useState([]);
   const [categoryDetails, setcategoryDetails] = useState([]);
@@ -25,25 +24,21 @@ const ManageCategory = () => {
   const [categoryToDelete, setcategoryToDelete] = useState(null);
   const [editDetails, setEditDetails] = useState(null);
 
-
-
-
   const SelectCategory = async () => {
     try {
-      const response = await axios.get(`${Url}/category_details`);
-      const cat_details = response.data.data.category_details;
+      const response = await axios.get(`${Url}/api/categories`);
+      const cat_details = response.data.categories;
       console.log('category data:', cat_details);
       setcategoryDetails(cat_details);
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error fetching category details:', error);
     }
-  }
+  };
 
   const fetchCategoryDetails = async () => {
     try {
-      const response = await axios.get(`${Url}/manage_category`);
-      const fetchcatDetails = response.data.data.category_details;
+      const response = await axios.get(`${Url}/api/categories`);
+      const fetchcatDetails = response.data.categories;
       console.log('Response data:', fetchcatDetails);
       setcatDetails(fetchcatDetails);
       setFilteredCategoryDetails(fetchcatDetails); // Initialize the filtered list
@@ -72,10 +67,9 @@ const ManageCategory = () => {
     setPage(newPage);
   };
 
-  const handleSelect = (eventKey, category_id) => {
-    console.log('category_id sadfasdf', category_id);
+  const handleSelect = (eventKey, id) => {
+    console.log('category_id sadfasdf', id);
     if (eventKey === 'delete') {
-
       Swal.fire({
         icon: 'warning',
         title: 'Are you sure?',
@@ -85,17 +79,15 @@ const ManageCategory = () => {
         cancelButtonText: 'Cancel'
       }).then((result) => {
         if (result.isConfirmed) {
-          deleteCategory(category_id);
+          deleteCategory(id);
         }
       });
     }
     if (eventKey === 'edit') {
-      console.log('view', category_id);
-      fetchEditDetails(category_id);
+      console.log('view', id);
+      fetchEditDetails(id);
       setShow2(true);
-
-    }
-    else {
+    } else {
       // Handle other dropdown item selections if needed
       console.log(`Selected item: ${eventKey}`);
     }
@@ -106,10 +98,7 @@ const ManageCategory = () => {
     filterResults(event.target.value);
   };
 
-
-
   const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredCategoryDetails.length - page * rowsPerPage);
-
 
   const filterResults = (searchTerm) => {
     // Ensure searchTerm is a string and handle cases where it might be null or undefined
@@ -118,14 +107,11 @@ const ManageCategory = () => {
     // Filter userDetails with proper null checks
     const filtered = catDetails.filter((user) => {
       // Check if username and email exist and are strings before calling toLowerCase
-      const category_name = (user.category_name || '').toLowerCase();
-      const createtime = user.createtime ? formatDate(user.createtime).toLowerCase() : '';
+      const category_name = (user.CategoryName || '').toLowerCase();
+      const createtime = user.createdAt ? formatDate(user.createdAt).toLowerCase() : '';
 
       // Return whether any of the conditions match the lowercased filter
-      return (
-        category_name.includes(lowercasedFilter) ||
-        createtime.includes(lowercasedFilter)
-      );
+      return category_name.includes(lowercasedFilter) || createtime.includes(lowercasedFilter);
     });
 
     // Update the state with the filtered results
@@ -148,7 +134,6 @@ const ManageCategory = () => {
     return `${day}/${month}/${year} ${strHours}:${minutes} ${ampm}`;
   }
 
-
   const handleShow = () => {
     setSelectedBanner(placeholder);
     setShow(true);
@@ -156,36 +141,35 @@ const ManageCategory = () => {
   const handleClose = () => {
     setSelectedBanner(placeholder);
     setShow(false);
-  }
+  };
 
   const handleClose2 = () => setShow2(false);
 
-
   //edit banner
-  const fetchEditDetails = async (category_id) => {
+  const fetchEditDetails = async (id) => {
     try {
-      const params = {
-        action: 'get_edit_category_detail',
-        category_id: category_id,
-      };
-      const response = await axios.get(`${Url}/get_edit_category_detail`, { params });
-      const categoryData = response.data.data;
-      setSelectedBanner(categoryData.image ? IMAGE_PATH + '/' + categoryData.image : placeholder);
+      // const params = {
+      //   action: 'get_edit_category_detail',
+      //   category_id: category_id
+      // };
+      // const response = await axios.get(`${Url}/get_edit_category_detail`, { params });
+      const response = await axios.get(`${Url}/api/categories/${id}`);
+      const categoryData = response.data.categories;
+      setSelectedBanner(categoryData.CategoryImage ? +`${Url}/uploads/` + categoryData.CategoryImage : placeholder);
       setEditDetails(categoryData);
-      console.log("check code", categoryData);
+      console.log('check code', categoryData);
     } catch (error) {
       console.error('Error fetching category details:', error);
     }
   };
 
-
   // Function to delete user
-  const deleteCategory = (category_id) => {
+  const deleteCategory = (id) => {
     // if (userToDelete) {
     //   console.log('banner_id check deleted', userToDelete);
-    const data = { category_id: category_id };
+    // const data = { category_id: category_id };
     axios
-      .post(Url + '/delete_category', data)
+      .post(Url + `/api/categories/${id}`)
       .then(() => {
         // Update userDetails state to remove the deleted user
         fetchCategoryDetails();
@@ -196,8 +180,6 @@ const ManageCategory = () => {
     // }
   };
 
-
-
   const handleFileChange = (event, setFieldValue) => {
     const file = event.target.files[0];
     if (file) {
@@ -207,10 +189,9 @@ const ManageCategory = () => {
   };
 
   const handleSubmit = async (values) => {
-
     console.log('values data', values);
 
-    const { category_id, name, action, banner } = values;
+    const { id, CategoryName, action, CategoryImage } = values;
 
     //for edit blog
     if (action === 'edit_category') {
@@ -219,21 +200,22 @@ const ManageCategory = () => {
       const data = new FormData();
 
       data.append('action', 'edit_banner');
-      data.append('category_id', category_id);
-      data.append('name', name);
-      if (banner) {
-        data.append('image', banner);
+      data.append('id', id);
+      data.append('CategoryName', CategoryName);
+      if (CategoryImage) {
+        data.append('CategoryImage', CategoryImage);
       } else {
-        data.append('image', '');
+        data.append('CategoryImage', '');
       }
 
       console.log('data', data);
 
-      axios.post(`${Url}/edit_category`, data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      axios
+        .patch(`${Url}/api/categories/${id}`, data, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
         .then((res) => {
           // setData1(res.data.data);
           if (res.data.success) {
@@ -249,25 +231,25 @@ const ManageCategory = () => {
           }
         })
         .catch((err) => console.error('Error fetching banner:', err));
-
     }
     //for add blog
     else {
       console.log('Choose add action');
       const data = new FormData();
       data.append('action', action);
-      data.append('name', name);
-      if (banner) {
-        data.append('image', banner);
+      data.append('CategoryName', CategoryName);
+      if (CategoryImage) {
+        data.append('CategoryImage', CategoryImage);
       }
 
       console.log('data', data);
 
-      axios.post(`${Url}/add_category`, data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      axios
+        .post(`${Url}/api/categories/create`, data, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
         .then((res) => {
           // setData1(res.data.data);
           if (res.data.success) {
@@ -286,10 +268,7 @@ const ManageCategory = () => {
     }
   };
 
-
-  useEffect(() => {
-
-  }, [editDetails]);
+  useEffect(() => {}, [editDetails]);
 
   return (
     <div>
@@ -344,27 +323,24 @@ const ManageCategory = () => {
                       ? filteredCategoryDetails.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       : filteredCategoryDetails
                     ).map((category, index) => (
-                      <tr key={category.category_id}>
+                      <tr key={category.id}>
                         <td style={{ textAlign: 'center' }}>{page * rowsPerPage + index + 1}</td>
                         {/* <td style={{ textAlign: 'center' }}>{category.banner_id}</td> */}
                         <td style={{ textAlign: 'center' }}>
                           <DropdownButton
                             title="Action"
-                            id={`dropdown-${category.category_id}`}
-                            onSelect={(eventKey) => handleSelect(eventKey, category.category_id)}
+                            id={`dropdown-${category.id}`}
+                            onSelect={(eventKey) => handleSelect(eventKey, category.id)}
                             className="btn-action"
                           >
-
-
                             <Dropdown.Item eventKey="edit">
                               <FaEdit className="icon" style={{ marginRight: '8px' }} /> Edit
                             </Dropdown.Item>
 
-
                             <Dropdown.Item
                               eventKey="delete"
                               onClick={() => {
-                                setcategoryToDelete(category.category_id);
+                                setcategoryToDelete(category.id);
                               }}
                             >
                               <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
@@ -374,14 +350,14 @@ const ManageCategory = () => {
 
                         <td style={{ textAlign: 'center' }}>
                           <img
-                            src={category.image ? `${IMAGE_PATH}/${category.image}` : `${placeholder}`}
+                            src={category.CategoryImage ? `${Url}/uploads/${category.CategoryImage}` : `${placeholder}`}
                             alt="image"
                             style={{ width: '50px', height: '50px', borderRadius: '50%' }}
                           />
                         </td>
 
-                        <td style={{ textAlign: 'center' }}>{category.category_name}</td>
-                        <td style={{ textAlign: 'center' }}>{formatDate(category.createtime)}</td>
+                        <td style={{ textAlign: 'center' }}>{category.CategoryName}</td>
+                        <td style={{ textAlign: 'center' }}>{formatDate(category.createdAt)}</td>
                       </tr>
                     ))}
                     {emptyRows > 0 && (
@@ -416,64 +392,53 @@ const ManageCategory = () => {
         </Modal.Header>
         <Modal.Body>
           <Formik
-            initialValues={{ name: '', action: "add_category", banner: null, submit: null }}
+            initialValues={{ name: '', action: 'add_category', banner: null, submit: null }}
             onSubmit={handleSubmit}
             validationSchema={Yup.object().shape({
-
-              name: Yup.string().max(255).required('Please enter category name'),
+              name: Yup.string().max(255).required('Please enter category name')
 
               // image: Yup.mixed().required('Please upload a  image'), // Validation for file input
             })}
           >
             {({ errors, handleBlur, handleChange, handleSubmit, setFieldValue, isSubmitting, touched, values }) => (
               <form noValidate onSubmit={handleSubmit}>
-
                 {/* Hidden input for action */}
                 <input type="hidden" name="action" value="add_category" />
-
 
                 <div className="form-group mb-2">
                   <label>Category Name</label>
                   <input
                     className="form-control"
                     label="Category Name"
-                    name="name"
+                    name="CategoryName"
                     onBlur={handleBlur}
                     onChange={handleChange}
                     type="text"
                     placeholder="Enter category name"
-                    value={values.name}
+                    value={values.CategoryName}
                   />
                   {touched.name && errors.name && <small className="text-danger form-text">{errors.name}</small>}
                 </div>
                 {/* Banner Image */}
 
                 <div className="mb-3">
-
                   <img
                     src={selectedBanner}
                     alt="Category"
                     style={{
-                      width: "70px",
-                      height: "70px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      objectFit: 'cover'
                     }}
                   />
-
                 </div>
                 <div className="mb-3">
                   <label htmlFor="category" className="form-label">
                     Category Image
                   </label>
-                  <Form.Control
-                    type="file"
-                    name="banner"
-                    onChange={(event) => handleFileChange(event, setFieldValue)}
-                  />
-                  {touched.banner && errors.banner && (
-                    <small className="text-danger form-text">{errors.banner}</small>
-                  )}
+                  <Form.Control type="file" name="CategoryImage" onChange={(event) => handleFileChange(event, setFieldValue)} />
+                  {touched.banner && errors.banner && <small className="text-danger form-text">{errors.banner}</small>}
                 </div>
 
                 {errors.submit && (
@@ -481,7 +446,7 @@ const ManageCategory = () => {
                     <Alert variant="danger">{errors.submit}</Alert>
                   </Col>
                 )}
-                <Row >
+                <Row>
                   <Col mt={5} className="text-center mt-4">
                     <button className="btn btn-block btn-primary mb-4" disabled={isSubmitting} size="large" type="submit">
                       Submit
@@ -503,61 +468,50 @@ const ManageCategory = () => {
           <Formik
             enableReinitialize
             initialValues={{
-              category_id: editDetails ? editDetails.category_id : '',
-              name: editDetails ? editDetails.category_name : '',
+              id: editDetails ? editDetails.id : '',
+              CategoryName: editDetails ? editDetails.CategoryName : '',
               action: 'edit_category',
-              banner: editDetails ? editDetails.image : null,
-              submit: null,
+              CategoryImage: editDetails ? editDetails.CategoryImage : null,
+              submit: null
             }}
             onSubmit={handleSubmit}
             validationSchema={Yup.object().shape({
               category_id: Yup.string().required('Please choose category'),
               name: Yup.string().max(255).required('Please enter name'),
-              banner: Yup.mixed().required('Please upload a image'),
+              banner: Yup.mixed().required('Please upload a image')
             })}
           >
-
             {({ errors, handleBlur, handleChange, handleSubmit, setFieldValue, isSubmitting, touched, values }) => (
               <Form noValidate onSubmit={handleSubmit}>
                 <input type="hidden" name="action" value="edit_category" />
 
                 <div className="form-group mb-2">
-                  <input
-                    className="form-control"
-                    name="category_id"
-                    type="hidden"
-                    value={values.category_id}
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                  />
+                  <input className="form-control" name="id" type="hidden" value={values.id} onBlur={handleBlur} onChange={handleChange} />
                 </div>
-
-
 
                 <div className="form-group mb-2">
                   <label>Category Name</label>
                   <input
                     className="form-control"
-                    name="name"
+                    name="CategoryName"
                     onBlur={handleBlur}
                     onChange={handleChange}
                     type="text"
                     placeholder="Enter title"
-                    value={values.name}
+                    value={values.CategoryName}
                   />
                   <ErrorMessage name="name" component="small" className="text-danger form-text" />
                 </div>
-
 
                 <div className="mb-3 mt-5">
                   <img
                     src={selectedBanner}
                     alt="Category"
                     style={{
-                      width: "70px",
-                      height: "70px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      objectFit: 'cover'
                     }}
                   />
                 </div>
@@ -568,7 +522,7 @@ const ManageCategory = () => {
                   </label>
                   <input
                     type="file"
-                    name="banner"
+                    name="CategoryImage"
                     className="form-control"
                     onChange={(event) => handleFileChange(event, setFieldValue)}
                   />
@@ -592,8 +546,6 @@ const ManageCategory = () => {
             )}
           </Formik>
         </Modal.Body>
-
-
       </Modal>
       {/* edit banner modal */}
     </div>
