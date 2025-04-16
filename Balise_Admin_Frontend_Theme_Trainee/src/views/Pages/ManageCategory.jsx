@@ -2,7 +2,7 @@
 /* eslint-disable react/jsx-no-undef */
 /* eslint-disable jsx-a11y/img-redundant-alt */
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Modal } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Modal, Alert } from 'react-bootstrap';
 import { Dropdown, DropdownButton, Form, FormControl } from 'react-bootstrap';
 import { FaRegTrashAlt, FaEdit, FaPlus } from 'react-icons/fa';
 import TablePagination from '@mui/material/TablePagination';
@@ -58,17 +58,16 @@ const ManageCategory = () => {
   const [page, setPage] = useState(0);
   const rowsPerPage = 5;
   const [searchTerm, setSearchTerm] = useState('');
-  const [show, setShow] = useState(false);
-  const [show2, setShow2] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState(placeholder);
-  const [editBannerDetails, setEditBannerDetails] = useState({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(placeholder);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
   const handleSelect = (eventKey, id) => {
-    console.log('category_id sadfasdf', id);
+    console.log('category_id', id);
     if (eventKey === 'delete') {
       Swal.fire({
         icon: 'warning',
@@ -86,10 +85,7 @@ const ManageCategory = () => {
     if (eventKey === 'edit') {
       console.log('view', id);
       fetchEditDetails(id);
-      setShow2(true);
-    } else {
-      // Handle other dropdown item selections if needed
-      console.log(`Selected item: ${eventKey}`);
+      setShowEditModal(true);
     }
   };
 
@@ -101,20 +97,12 @@ const ManageCategory = () => {
   const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredCategoryDetails.length - page * rowsPerPage);
 
   const filterResults = (searchTerm) => {
-    // Ensure searchTerm is a string and handle cases where it might be null or undefined
     const lowercasedFilter = (searchTerm || '').toLowerCase();
-
-    // Filter userDetails with proper null checks
     const filtered = catDetails.filter((user) => {
-      // Check if username and email exist and are strings before calling toLowerCase
       const category_name = (user.CategoryName || '').toLowerCase();
       const createtime = user.createdAt ? formatDate(user.createdAt).toLowerCase() : '';
-
-      // Return whether any of the conditions match the lowercased filter
       return category_name.includes(lowercasedFilter) || createtime.includes(lowercasedFilter);
     });
-
-    // Update the state with the filtered results
     setFilteredCategoryDetails(filtered);
   };
 
@@ -128,147 +116,120 @@ const ManageCategory = () => {
     const minutes = padTo2Digits(formattedDate.getMinutes());
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12;
     const strHours = padTo2Digits(hours);
 
     return `${day}/${month}/${year} ${strHours}:${minutes} ${ampm}`;
   }
 
-  const handleShow = () => {
-    setSelectedBanner(placeholder);
-    setShow(true);
+  const handleAddShow = () => {
+    setSelectedImage(placeholder);
+    setShowAddModal(true);
   };
-  const handleClose = () => {
-    setSelectedBanner(placeholder);
-    setShow(false);
+  const handleAddClose = () => {
+    setSelectedImage(placeholder);
+    setShowAddModal(false);
   };
 
-  const handleClose2 = () => setShow2(false);
+  const handleEditClose = () => {
+    setSelectedImage(placeholder);
+    setShowEditModal(false);
+  };
 
-  //edit banner
   const fetchEditDetails = async (id) => {
     try {
-      // const params = {
-      //   action: 'get_edit_category_detail',
-      //   category_id: category_id
-      // };
-      // const response = await axios.get(`${Url}/get_edit_category_detail`, { params });
       const response = await axios.get(`${Url}/api/categories/${id}`);
-      const categoryData = response.data.categories;
-      setSelectedBanner(categoryData.CategoryImage ? +`${Url}/uploads/` + categoryData.CategoryImage : placeholder);
+      const categoryData = response.data.category;
       setEditDetails(categoryData);
-      console.log('check code', categoryData);
+      setSelectedImage(categoryData.CategoryImage ? `${Url}/uploads/${categoryData.CategoryImage}` : placeholder);
     } catch (error) {
       console.error('Error fetching category details:', error);
     }
   };
 
-  // Function to delete user
   const deleteCategory = (id) => {
-    // if (userToDelete) {
-    //   console.log('banner_id check deleted', userToDelete);
-    // const data = { category_id: category_id };
     axios
-      .post(Url + `/api/categories/${id}`)
+      .delete(Url + `/api/categories/${id}`)
       .then(() => {
-        // Update userDetails state to remove the deleted user
         fetchCategoryDetails();
+        Swal.fire({
+          icon: 'success',
+          text: 'Category deleted successfully!',
+          confirmButtonText: 'Ok'
+        });
       })
       .catch((error) => {
-        console.log('Error deleting user:', error);
+        console.log('Error deleting category:', error);
+        Swal.fire({
+          icon: 'error',
+          text: 'Failed to delete category',
+          confirmButtonText: 'Ok'
+        });
       });
-    // }
   };
 
   const handleFileChange = (event, setFieldValue) => {
     const file = event.target.files[0];
     if (file) {
-      setSelectedBanner(URL.createObjectURL(file));
-      setFieldValue('banner', file); // Update Formik's field value
+      setSelectedImage(URL.createObjectURL(file));
+      setFieldValue('CategoryImage', file);
     }
   };
 
-  const handleSubmit = async (values) => {
-    console.log('values data', values);
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+    try {
+      const formData = new FormData();
+      formData.append('CategoryName', values.CategoryName);
 
-    const { id, CategoryName, action, CategoryImage } = values;
+      if (values.action === 'edit_category') {
+        formData.append('id', values.id);
+        if (values.CategoryImage instanceof File) {
+          formData.append('CategoryImage', values.CategoryImage);
+        }
 
-    //for edit blog
-    if (action === 'edit_category') {
-      console.log('Choose edit action');
+        await axios.patch(`${Url}/api/categories/${values.id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
 
-      const data = new FormData();
-
-      data.append('action', 'edit_banner');
-      data.append('id', id);
-      data.append('CategoryName', CategoryName);
-      if (CategoryImage) {
-        data.append('CategoryImage', CategoryImage);
+        setShowEditModal(false);
+        fetchCategoryDetails();
+        Swal.fire({
+          icon: 'success',
+          text: 'Category updated successfully!',
+          confirmButtonText: 'Ok'
+        });
       } else {
-        data.append('CategoryImage', '');
-      }
+        // Add new category
+        formData.append('CategoryImage', values.CategoryImage);
 
-      console.log('data', data);
-
-      axios
-        .patch(`${Url}/api/categories/${id}`, data, {
+        await axios.post(`${Url}/api/categories/create`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        })
-        .then((res) => {
-          // setData1(res.data.data);
-          if (res.data.success) {
-            Swal.fire({
-              icon: 'success',
-              // title: 'Login',
-              text: 'Category Updated successfully.',
-              confirmButtonText: 'Ok'
-            }).then(() => {
-              setShow2(false);
-              fetchCategoryDetails();
-            });
-          }
-        })
-        .catch((err) => console.error('Error fetching banner:', err));
-    }
-    //for add blog
-    else {
-      console.log('Choose add action');
-      const data = new FormData();
-      data.append('action', action);
-      data.append('CategoryName', CategoryName);
-      if (CategoryImage) {
-        data.append('CategoryImage', CategoryImage);
+        });
+
+        setShowAddModal(false);
+        fetchCategoryDetails();
+        Swal.fire({
+          icon: 'success',
+          text: 'Category added successfully!',
+          confirmButtonText: 'Ok'
+        });
       }
-
-      console.log('data', data);
-
-      axios
-        .post(`${Url}/api/categories/create`, data, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        .then((res) => {
-          // setData1(res.data.data);
-          if (res.data.success) {
-            Swal.fire({
-              icon: 'success',
-              // title: 'Login',
-              text: 'Category added successfully.',
-              confirmButtonText: 'Ok'
-            }).then(() => {
-              setShow(false);
-              fetchCategoryDetails();
-            });
-          }
-        })
-        .catch((err) => console.error('Error fetching banner:', err));
+    } catch (error) {
+      console.error('Error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Something went wrong',
+        confirmButtonText: 'Ok'
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  useEffect(() => {}, [editDetails]);
 
   return (
     <div>
@@ -296,7 +257,7 @@ const ManageCategory = () => {
                     />
                   </Col>
                   <Col md={2}>
-                    <Button onClick={handleShow}>
+                    <Button onClick={handleAddShow}>
                       <FaPlus style={{ marginRight: '5px' }} />
                       Add Category
                     </Button>
@@ -310,10 +271,8 @@ const ManageCategory = () => {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'center' }}>S.No</th>
-                      {/* <th style={{ textAlign: 'center' }}>ID</th> */}
                       <th style={{ textAlign: 'center' }}>Action</th>
                       <th style={{ textAlign: 'center' }}>Image</th>
-                      {/* <th style={{ textAlign: 'center' }}>Title</th> */}
                       <th style={{ textAlign: 'center' }}>Category Name</th>
                       <th style={{ textAlign: 'center' }}>Create Date & Time</th>
                     </tr>
@@ -325,7 +284,6 @@ const ManageCategory = () => {
                     ).map((category, index) => (
                       <tr key={category.id}>
                         <td style={{ textAlign: 'center' }}>{page * rowsPerPage + index + 1}</td>
-                        {/* <td style={{ textAlign: 'center' }}>{category.banner_id}</td> */}
                         <td style={{ textAlign: 'center' }}>
                           <DropdownButton
                             title="Action"
@@ -336,18 +294,11 @@ const ManageCategory = () => {
                             <Dropdown.Item eventKey="edit">
                               <FaEdit className="icon" style={{ marginRight: '8px' }} /> Edit
                             </Dropdown.Item>
-
-                            <Dropdown.Item
-                              eventKey="delete"
-                              onClick={() => {
-                                setcategoryToDelete(category.id);
-                              }}
-                            >
+                            <Dropdown.Item eventKey="delete">
                               <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
                             </Dropdown.Item>
                           </DropdownButton>
                         </td>
-
                         <td style={{ textAlign: 'center' }}>
                           <img
                             src={category.CategoryImage ? `${Url}/uploads/${category.CategoryImage}` : `${placeholder}`}
@@ -355,7 +306,6 @@ const ManageCategory = () => {
                             style={{ width: '50px', height: '50px', borderRadius: '50%' }}
                           />
                         </td>
-
                         <td style={{ textAlign: 'center' }}>{category.CategoryName}</td>
                         <td style={{ textAlign: 'center' }}>{formatDate(category.createdAt)}</td>
                       </tr>
@@ -382,34 +332,32 @@ const ManageCategory = () => {
           </Card>
         </Col>
       </Row>
-      <Row>
-        <Col sm={12} style={{ textAlign: 'right', marginTop: '10px' }}></Col>
-      </Row>
 
-      <Modal show={show} onHide={handleClose}>
+      {/* Add Category Modal */}
+      <Modal show={showAddModal} onHide={handleAddClose} backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title style={{ fontSize: '17px' }}>Add Category</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Formik
-            initialValues={{ name: '', action: 'add_category', banner: null, submit: null }}
+            initialValues={{
+              CategoryName: '',
+              CategoryImage: null,
+              action: 'add_category',
+              submit: null
+            }}
             onSubmit={handleSubmit}
             validationSchema={Yup.object().shape({
-              name: Yup.string().max(255).required('Please enter category name')
-
-              // image: Yup.mixed().required('Please upload a  image'), // Validation for file input
+              CategoryName: Yup.string().max(255).required('Please enter category name'),
+              CategoryImage: Yup.mixed().required('Please upload an image')
             })}
           >
             {({ errors, handleBlur, handleChange, handleSubmit, setFieldValue, isSubmitting, touched, values }) => (
               <form noValidate onSubmit={handleSubmit}>
-                {/* Hidden input for action */}
-                <input type="hidden" name="action" value="add_category" />
-
                 <div className="form-group mb-2">
                   <label>Category Name</label>
                   <input
-                    className="form-control"
-                    label="Category Name"
+                    className={`form-control ${touched.CategoryName && errors.CategoryName ? 'is-invalid' : ''}`}
                     name="CategoryName"
                     onBlur={handleBlur}
                     onChange={handleChange}
@@ -417,13 +365,12 @@ const ManageCategory = () => {
                     placeholder="Enter category name"
                     value={values.CategoryName}
                   />
-                  {touched.name && errors.name && <small className="text-danger form-text">{errors.name}</small>}
+                  <ErrorMessage name="CategoryName" component="small" className="text-danger form-text" />
                 </div>
-                {/* Banner Image */}
 
                 <div className="mb-3">
                   <img
-                    src={selectedBanner}
+                    src={selectedImage}
                     alt="Category"
                     style={{
                       width: '70px',
@@ -433,12 +380,20 @@ const ManageCategory = () => {
                     }}
                   />
                 </div>
+
                 <div className="mb-3">
-                  <label htmlFor="category" className="form-label">
+                  <label htmlFor="CategoryImage" className="form-label">
                     Category Image
                   </label>
-                  <Form.Control type="file" name="CategoryImage" onChange={(event) => handleFileChange(event, setFieldValue)} />
-                  {touched.banner && errors.banner && <small className="text-danger form-text">{errors.banner}</small>}
+                  <input
+                    type="file"
+                    id="CategoryImage"
+                    name="CategoryImage"
+                    className={`form-control ${touched.CategoryImage && errors.CategoryImage ? 'is-invalid' : ''}`}
+                    accept="image/*"
+                    onChange={(event) => handleFileChange(event, setFieldValue)}
+                  />
+                  <ErrorMessage name="CategoryImage" component="div" className="text-danger" />
                 </div>
 
                 {errors.submit && (
@@ -446,9 +401,10 @@ const ManageCategory = () => {
                     <Alert variant="danger">{errors.submit}</Alert>
                   </Col>
                 )}
+
                 <Row>
-                  <Col mt={5} className="text-center mt-4">
-                    <button className="btn btn-block btn-primary mb-4" disabled={isSubmitting} size="large" type="submit">
+                  <Col className="text-center mt-4">
+                    <button className="btn btn-block btn-primary mb-4" disabled={isSubmitting} type="submit">
                       Submit
                     </button>
                   </Col>
@@ -459,8 +415,8 @@ const ManageCategory = () => {
         </Modal.Body>
       </Modal>
 
-      {/* edit banner modal */}
-      <Modal show={show2} onHide={handleClose2}>
+      {/* Edit Category Modal */}
+      <Modal show={showEditModal} onHide={handleEditClose} backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title style={{ fontSize: '17px' }}>Edit Category</Modal.Title>
         </Modal.Header>
@@ -476,36 +432,30 @@ const ManageCategory = () => {
             }}
             onSubmit={handleSubmit}
             validationSchema={Yup.object().shape({
-              category_id: Yup.string().required('Please choose category'),
-              name: Yup.string().max(255).required('Please enter name'),
-              banner: Yup.mixed().required('Please upload a image')
+              CategoryName: Yup.string().max(255).required('Please enter category name')
             })}
           >
             {({ errors, handleBlur, handleChange, handleSubmit, setFieldValue, isSubmitting, touched, values }) => (
-              <Form noValidate onSubmit={handleSubmit}>
-                <input type="hidden" name="action" value="edit_category" />
-
-                <div className="form-group mb-2">
-                  <input className="form-control" name="id" type="hidden" value={values.id} onBlur={handleBlur} onChange={handleChange} />
-                </div>
+              <form noValidate onSubmit={handleSubmit}>
+                <input type="hidden" name="id" value={values.id} />
 
                 <div className="form-group mb-2">
                   <label>Category Name</label>
                   <input
-                    className="form-control"
+                    className={`form-control ${touched.CategoryName && errors.CategoryName ? 'is-invalid' : ''}`}
                     name="CategoryName"
                     onBlur={handleBlur}
                     onChange={handleChange}
                     type="text"
-                    placeholder="Enter title"
+                    placeholder="Enter category name"
                     value={values.CategoryName}
                   />
-                  <ErrorMessage name="name" component="small" className="text-danger form-text" />
+                  <ErrorMessage name="CategoryName" component="small" className="text-danger form-text" />
                 </div>
 
-                <div className="mb-3 mt-5">
+                <div className="mb-3">
                   <img
-                    src={selectedBanner}
+                    src={selectedImage}
                     alt="Category"
                     style={{
                       width: '70px',
@@ -517,16 +467,18 @@ const ManageCategory = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="banner" className="form-label">
-                    Image
+                  <label htmlFor="CategoryImage" className="form-label">
+                    Category Image
                   </label>
                   <input
                     type="file"
+                    id="CategoryImage"
                     name="CategoryImage"
                     className="form-control"
+                    accept="image/*"
                     onChange={(event) => handleFileChange(event, setFieldValue)}
                   />
-                  <ErrorMessage name="banner" component="small" className="text-danger form-text" />
+                  <small className="text-muted">Leave empty to keep current image</small>
                 </div>
 
                 {errors.submit && (
@@ -542,12 +494,11 @@ const ManageCategory = () => {
                     </button>
                   </Col>
                 </Row>
-              </Form>
+              </form>
             )}
           </Formik>
         </Modal.Body>
       </Modal>
-      {/* edit banner modal */}
     </div>
   );
 };

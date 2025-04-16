@@ -97,6 +97,11 @@ export const routes = [
       },
       {
         exact: 'true',
+        path: APP_PREFIX_PATH + '/view-question/:question_id',
+        element: lazy(() => import('./views/Pages/viewQuestion'))
+      },
+      {
+        exact: 'true',
         path: APP_PREFIX_PATH + '/manage_category',
         element: lazy(() => import('./views/Pages/ManageCategory'))
       },

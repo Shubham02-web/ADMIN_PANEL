@@ -1,196 +1,157 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Table } from 'react-bootstrap';
-import { Button, Form, Modal, FormControl } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Form, Modal } from 'react-bootstrap';
+import { Dropdown, DropdownButton, FormControl } from 'react-bootstrap';
 import TablePagination from '@mui/material/TablePagination';
-import { Dropdown, DropdownButton } from 'react-bootstrap';
 import { FaEye } from 'react-icons/fa';
-
-import './main.css';
 import { IoMdSend } from 'react-icons/io';
-// import avatar1 from 'assets/images/user/avatar-1.jpg';
 import { Breadcrumb } from 'react-bootstrap';
 import axios from 'axios';
-import { Url } from 'config/constant';
+import Swal from 'sweetalert2';
+import { Url } from '../../config/constant';
+import './main.css';
 
 const ManageContact = () => {
-  // const [currentPage, setCurrentPage] = useState(1);
-  // const [itemsPerPage] = useState(10);
-  const [userDetails, setUserDetails] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [showMsgModal, setShowMsgModal] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [title, setTitle] = useState('');
-  // const [selectedActions, setSelectedActions] = useState({});
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]); // State to store messages
+  const [messages, setMessages] = useState([]);
+  const [filteredMessages, setFilteredMessages] = useState([]);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [replyContent, setReplyContent] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
   const rowsPerPage = 5;
-  // const [searchTerm, setSearchTerm] = useState('');
-  // const [show, setShow] = useState('false');
 
-  // const handleClose = () => setShow(false);
-  // const handleShow = () => setShow(true);
+  const fetchMessages = async () => {
+    try {
+      const response = await axios.get(`${Url}/api/messages`);
 
+      // Debugging logs
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+
+      // Handle different response structures
+      let messagesData = [];
+
+      if (Array.isArray(response.data)) {
+        // If backend returns direct array
+        messagesData = response.data;
+      } else if (response.data && Array.isArray(response.data.messages)) {
+        // If backend returns { messages: [] }
+        messagesData = response.data.messages;
+      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        // If backend returns { success: true, data: [] }
+        messagesData = response.data.data;
+      } else {
+        throw new Error('Unexpected response format');
+      }
+
+      setMessages(messagesData);
+      setFilteredMessages(messagesData);
+    } catch (error) {
+      console.error('Fetch error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to load messages',
+        text: error.response?.data?.message || error.message
+      });
+    }
+  };
+  useEffect(() => {
+    console.log('Making API call to:', `${Url}/api/messages`);
+    fetchMessages();
+  }, []);
+
+  // Handle search
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    const filtered = messages.filter((msg) => {
+      return (
+        msg.customerName.toLowerCase().includes(query) ||
+        msg.customerEmail.toLowerCase().includes(query) ||
+        msg.message.toLowerCase().includes(query) ||
+        (msg.reply && msg.reply.toLowerCase().includes(query)) ||
+        msg.status.toLowerCase().includes(query)
+      );
+    });
+    setFilteredMessages(filtered);
+    setPage(0); // Reset to first page when searching
+  };
+
+  // Handle reply to message
+  const handleReply = (message) => {
+    setSelectedMessage(message);
+    setShowReplyModal(true);
+  };
+
+  // Handle view message
+  const handleView = (message) => {
+    setSelectedMessage(message);
+    setShowViewModal(true);
+  };
+
+  // Send reply
+  const sendReply = async () => {
+    if (!replyContent.trim()) {
+      Swal.fire('Error!', 'Reply content cannot be empty', 'error');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`${Url}/api/messages/${selectedMessage.id}`, {
+        reply: replyContent
+      });
+
+      if (response.data.success) {
+        Swal.fire('Success!', 'Reply sent successfully', 'success');
+        setShowReplyModal(false);
+        setReplyContent('');
+        fetchMessages(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      Swal.fire('Error!', 'Failed to send reply', 'error');
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Pagination
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
-  function getContactUsDetails() {
-    axios
-      .get(Url + '/get_contact')
-      .then((response) => {
-        if (response.data.success) {
-          // const sortedDetails = response.data.res.sort((a, b) => b.contact_id - a.contact_id);
-          console.log('response', response.data.data.users);
+  const paginatedMessages = filteredMessages.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-          setUserDetails(response.data.data.users);
-        } else {
-          console.error('Failed to fetch user details:', response.data.msg);
-        }
-      })
-      .catch((error) => {
-        console.log('Error fetching user details:', error);
-      });
-  }
-
-  useEffect(() => {
-    getContactUsDetails();
-  }, []);
-
-  const handleSelect = (action, user) => {
-    // setSelectedActions({ ...selectedActions, [index]: action });
-    if (action === 'reply') {
-      setSelectedUser(user);
-      setShowModal(true);
-      setName(user.name);
-      setEmail(user.email);
-      setError('');
-    }
-    if (action === 'view') {
-      setShowMsgModal(true);
-      setSelectedUser(user);
-      fetchMessages(user.contact_id); // Fetch messages when viewing
-    }
-  };
-
-  function formatDate(date) {
-    const padTo2Digits = (num) => num.toString().padStart(2, '0');
-    const formattedDate = new Date(date);
-    const day = padTo2Digits(formattedDate.getDate());
-    const month = padTo2Digits(formattedDate.getMonth() + 1);
-    const year = formattedDate.getFullYear();
-    let hours = formattedDate.getHours();
-    const minutes = padTo2Digits(formattedDate.getMinutes());
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    const strHours = padTo2Digits(hours);
-
-    return `${day}/${month}/${year} ${strHours}:${minutes} ${ampm}`;
-  }
-
-  const sendReplyEmail = () => {
-    if (!name || !email || !title || !message) {
-      setError('* All fields are required');
-      return;
-    }
-    setShowModal(false);
-
-    if (selectedUser && selectedUser.email) {
-      const { email: userEmail, contact_id } = selectedUser;
-      console.log('hey',contact_id,  userEmail, name,  title, message)
-      axios
-        .post(Url + '/send_reply', { contact_id, user_email: userEmail, user_name: name,  title, message })
-        .then((response) => {
-          if (response.data.success) {
-            axios
-              .post(Url + 'updateStatus', { contact_id, message })
-              .then(() => {
-                const updatedUserDetails = userDetails.map((user) =>
-                  user.contact_id === contact_id ? { ...user, status: 1, replied_date_time: new Date() } : user
-                );
-                setUserDetails(updatedUserDetails);
-                setShowModal(false);
-                setError('');
-                setTitle('');
-                setMessage('');
-              })
-              .catch((error) => {
-                console.log('Error updating user status:', error);
-              });
-          } else {
-            console.log('Failed to send email:', response.data.msg);
-          }
-        })
-        .catch((error) => {
-          console.log('Error sending email:', error);
-        });
-    } else {
-      console.log("No user selected or user's email is invalid");
-    }
-  };
-
-  const fetchMessages = (contact_id) => {
-    console.log('con', contact_id);
-    axios
-      .post(Url + 'ViewReplymsg', { contact_id })
-      .then((response) => {
-        if (response.data.success) {
-          setMessages([{ message: response.data.reply }]); // Update state with fetched message
-          console.log([{ message: response.data.reply }]); // Update state with fetched message
-          setShowMsgModal(true); // Ensure modal is shown after fetching messages
-        } else {
-          console.error('Failed to fetch messages:', response.data.msg);
-        }
-      })
-      .catch((error) => {
-        console.log('Error fetching messages:', error);
-      });
-  };
-  const closeModal = () => {
-    setShowModal(false);
-    setShowMsgModal(false); // Hide message modal on close
-    setMessages([]); 
-   setTitle('');
-    setMessage('');
-  };
-
-  // const indexOfLastItem = currentPage * itemsPerPage;
-  // const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  // const currentItems = userDetails.slice(indexOfFirstItem, indexOfLastItem);
-
-  const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const filteredItems = userDetails.filter((row) => {
-    const name = row.name ? row.name.toLowerCase() : ''; // Change to 'name' directly
-    const email = row.email ? row.email.toLowerCase() : ''; // Use 'email' directly
-    const message = row.message ? row.message.toLowerCase() : ''; // Use 'message' directly
-    const dateMatch = new Date(row.replied_date_time).toLocaleDateString().includes(searchQuery);
-    const query = searchQuery.toLowerCase();
-
-    return name.includes(query) || email.includes(query) || dateMatch || message.includes(query);
-  });
-
-  const paginatedItems = filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, userDetails.length - page * rowsPerPage);
+  const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredMessages.length - page * rowsPerPage);
 
   return (
     <div>
       <Breadcrumb>
-        <Breadcrumb.Item to="#">
+        <Breadcrumb.Item href="#">
           <i className="feather icon-home" />
         </Breadcrumb.Item>
-        <Breadcrumb.Item to="#">Dashboard</Breadcrumb.Item>
-
-        <Breadcrumb.Item to="#">Manage Contact</Breadcrumb.Item>
+        <Breadcrumb.Item href="#">Dashboard</Breadcrumb.Item>
+        <Breadcrumb.Item active>Manage Contact Messages</Breadcrumb.Item>
       </Breadcrumb>
+
       <Row>
         <Col sm={12}>
           <Card>
@@ -200,7 +161,7 @@ const ManageContact = () => {
                   <Col md={10}>
                     <FormControl
                       type="text"
-                      placeholder="Search"
+                      placeholder="Search messages..."
                       className="mr-sm-2"
                       value={searchQuery}
                       onChange={handleSearch}
@@ -216,44 +177,37 @@ const ManageContact = () => {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'center' }}>S.No</th>
-                
-                      <th style={{ textAlign: 'center' }}>Action</th>
+                      <th style={{ textAlign: 'center' }}>Actions</th>
                       <th style={{ textAlign: 'center' }}>Name</th>
                       <th style={{ textAlign: 'center' }}>Email</th>
                       <th style={{ textAlign: 'center' }}>Message</th>
                       <th style={{ textAlign: 'center' }}>Status</th>
-                      <th style={{ textAlign: 'center' }}>Replied Date & Time</th>
+                      <th style={{ textAlign: 'center' }}>Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedItems.map((user, index) => (
-                      <tr key={user.contact_id}>
-
-                        <td style={{ textAlign: 'center' }}>{index + 1}</td>
-
+                    {paginatedMessages.map((message, index) => (
+                      <tr key={message.id}>
+                        <td style={{ textAlign: 'center' }}>{page * rowsPerPage + index + 1}</td>
                         <td style={{ textAlign: 'center' }}>
-                          <DropdownButton
-                            title="Action"
-                            id={`dropdown-${user.contact_id}`}
-                            onSelect={(eventKey) => handleSelect(eventKey, user)}
-                            className="btn-action"
-                          >
-                            <Dropdown.Item eventKey="reply">
+                          <DropdownButton title="Actions" id={`dropdown-${message.id}`} size="sm">
+                            <Dropdown.Item onClick={() => handleView(message)}>
+                              <FaEye className="icon" style={{ marginRight: '8px' }} /> View
+                            </Dropdown.Item>
+                            <Dropdown.Item onClick={() => handleReply(message)} disabled={message.status === 'replied'}>
                               <IoMdSend className="icon" style={{ marginRight: '8px' }} /> Reply
                             </Dropdown.Item>
-
-                            {/* <Dropdown.Item eventKey="view">
-                              <FaEye className="icon" style={{ marginRight: '8px' }} /> View
-                            </Dropdown.Item> */}
                           </DropdownButton>
                         </td>
-                        <td style={{ textAlign: 'center' }}>{user.name}</td>
-                        <td style={{ textAlign: 'center' }}>{user.email}</td>
-                        <td style={{ textAlign: 'center' }}>{user.message}</td>
+                        <td style={{ textAlign: 'center' }}>{message.customerName}</td>
+                        <td style={{ textAlign: 'center' }}>{message.customerEmail}</td>
                         <td style={{ textAlign: 'center' }}>
-                          {user.status === 0 ? <span className="btn-pending">Pending</span> : <span className="btn-active">Replied</span>}
+                          {message.message.length > 50 ? `${message.message.substring(0, 50)}...` : message.message}
                         </td>
-                        <td style={{ textAlign: 'center' }}>{user.reply_datetime ? formatDate(user.reply_datetime) : 'NA'}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`badge ${message.status === 'pending' ? 'bg-warning' : 'bg-success'}`}>{message.status}</span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>{formatDate(message.createdAt)}</td>
                       </tr>
                     ))}
                     {emptyRows > 0 && (
@@ -264,82 +218,91 @@ const ManageContact = () => {
                   </tbody>
                 </Table>
                 <TablePagination
-                  style={{ textAlign: 'right', marginTop: '10px' }}
-                  labelRowsPerPage="Showing 1 to 20 of 20 entries:"
                   component="div"
-                  count={userDetails.length}
+                  count={filteredMessages.length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}
-                  rowsPerPageOptions={[5, 10, 25, 100]}
+                  rowsPerPageOptions={[5, 10, 25]}
                 />
               </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-      <Row>
-        <Col sm={12} style={{ textAlign: 'right', marginTop: '10px' }}></Col>
-      </Row>
-      {/* reply modal */}
 
-      <Modal show={showModal} onHide={closeModal}>
-        <Modal.Header >
+      {/* Reply Modal */}
+      <Modal show={showReplyModal} onHide={() => setShowReplyModal(false)}>
+        <Modal.Header closeButton>
           <Modal.Title>Reply to Message</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control type="text" value={name} readOnly />
+              <Form.Label>From</Form.Label>
+              <Form.Control type="text" value={selectedMessage?.customerName || ''} readOnly />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Email</Form.Label>
-              <Form.Control type="email" value={email} readOnly />
+              <Form.Control type="text" value={selectedMessage?.customerEmail || ''} readOnly />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Title</Form.Label>
-              <Form.Control type="text" placeholder="enter title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Form.Label>Original Message</Form.Label>
+              <Form.Control as="textarea" rows={3} value={selectedMessage?.message || ''} readOnly />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Message</Form.Label>
+              <Form.Label>Your Reply</Form.Label>
               <Form.Control
                 as="textarea"
-                placeholder="enter message"
-                rows={3}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                rows={5}
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Type your reply here..."
               />
             </Form.Group>
           </Form>
-          {error && <span style={{ color: 'red' }}>{error}</span>}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={closeModal}>
-            Close
+          <Button variant="secondary" onClick={() => setShowReplyModal(false)}>
+            Cancel
           </Button>
-          <Button variant="primary" onClick={sendReplyEmail}>
-            Reply
+          <Button variant="primary" onClick={sendReply}>
+            Send Reply
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Modal for viewing messages */}
-      <Modal show={showMsgModal} onHide={closeModal}>
+      {/* View Message Modal */}
+      <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>View Messages</Modal.Title>
+          <Modal.Title>Message Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {messages.map((msg, index) => (
-            <div key={index}>
-              <p>{msg.message}</p>
-              {/* If sent_date_time is available in the API response */}
-              {/* <p>Sent Date: {formatDate(msg.sent_date_time)}</p> */}
+          {selectedMessage && (
+            <div>
+              <div className="mb-3">
+                <h6>From: {selectedMessage.customerName}</h6>
+                <p>Email: {selectedMessage.customerEmail}</p>
+                <p>Date: {formatDate(selectedMessage.createdAt)}</p>
+              </div>
+
+              <div className="mb-3 p-3 bg-light rounded">
+                <h5>Original Message:</h5>
+                <p>{selectedMessage.message}</p>
+              </div>
+
+              {selectedMessage.reply && (
+                <div className="p-3 bg-light rounded">
+                  <h5>Your Reply:</h5>
+                  <p>{selectedMessage.reply}</p>
+                  <small className="text-muted">Replied on: {formatDate(selectedMessage.updatedAt)}</small>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={closeModal}>
+          <Button variant="secondary" onClick={() => setShowViewModal(false)}>
             Close
           </Button>
         </Modal.Footer>

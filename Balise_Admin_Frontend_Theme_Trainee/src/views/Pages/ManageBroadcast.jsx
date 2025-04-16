@@ -8,7 +8,6 @@ import Swal from 'sweetalert2';
 
 function Managebroadcast() {
   const [key, setKey] = useState('allCustomers');
-  const [content, setContent] = useState(0);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -16,84 +15,71 @@ function Managebroadcast() {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [errors, setErrors] = useState({});
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [selecterror, setselecterror] = useState('');
 
   const contentTypes = {
     all: 0,
-    specific: 1,
+    specific: 1
   };
 
   useEffect(() => {
     axios
-      .get(`${Url}/Users`)
+      .get(`${Url}/broadcast/customers`)
       .then((response) => {
-        const userOptions = response.data.res.map((user) => ({
-          value: user.user_id,
-          label: user.name,
+        const userOptions = response.data.data.map((user) => ({
+          value: user.id,
+          label: user.username
         }));
         setUsers(userOptions);
       })
       .catch((error) => {
-        console.error('There was an error fetching the users!', error);
+        console.error('Error fetching users:', error);
       });
   }, []);
 
   const validateFields = () => {
     const newErrors = {};
-
-    // if (selectedUsers.length === 0) {
-    //   newErrors.selectedUsers = 'Select User';
-    // }
-    if (!title.trim()) {
-      newErrors.title = 'Enter title';
+    if (!title.trim()) newErrors.title = 'Enter title';
+    if (!message.trim()) newErrors.message = 'Enter message';
+    if (key === 'selectCustomers' && selectedUsers.length === 0) {
+      newErrors.selectedUsers = 'Select at least one user';
     }
-    if (!message.trim()) {
-      newErrors.message = 'Enter message';
-    }
-    if (content === contentTypes.specific && selectedUsers.length === 0) {
-      newErrors.selectedUsers = 'Select user';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleTabChange = (tabKey) => {
+    setKey(tabKey);
+    setSelectedUsers([]);
+    setErrors({});
   };
 
   const SendBroadcast = () => {
     if (!validateFields()) return;
 
     const data = {
-      action: 'send',
       subject: title,
       message,
-      select_arr: content === contentTypes.specific ? JSON.stringify(selectedUsers.map((user) => user.value)) : [],
-      userType: content === contentTypes.all ? 'all' : 'user',
+      user_type: key === 'allCustomers' ? 'all' : 'specific',
+      select_arr: key === 'selectCustomers' ? JSON.stringify(selectedUsers.map((user) => user.value)) : '[]'
     };
 
     setIsButtonDisabled(true);
     axios
-      .post(`${Url}send_broadcast`, data)
-      .then(() => {
-
-        setShowModal(true);
-        setErrors({});
+      .post(`${Url}/api/broadcast/send_broadcast`, data)
+      .then((response) => {
+        if (response.data.success) {
+          setShowModal(true);
+          setTitle('');
+          setMessage('');
+          setSelectedUsers([]);
+        } else {
+          Swal.fire('Error!', response.data.message || 'Failed to send broadcast', 'error');
+        }
       })
-      .catch(() => {
-        setShowModal(true);
-        setErrors({});
+      .catch((error) => {
+        Swal.fire('Error!', error.response?.data?.message || 'Failed to send broadcast', 'error');
       })
-      .finally(() => {
-        setIsButtonDisabled(false);
-
-      });
-  };
-
-  const handleModalClose = () => {
-    setTitle('');
-    setMessage('');
-    setSelectedUsers([]);
-    setIsButtonDisabled(false);
-    setShowModal(false);
-
+      .finally(() => setIsButtonDisabled(false));
   };
 
   return (
@@ -107,115 +93,61 @@ function Managebroadcast() {
       </Breadcrumb>
 
       <Card className="p-3">
-        <Tabs
-          id="controlled-tab-example"
-          activeKey={key}
-          onSelect={(k) => setKey(k)}
-          className="mb-3"
-          style={{ borderBottom: '0' }}
-        >
+        <Tabs activeKey={key} onSelect={handleTabChange} className="mb-3">
           <Tab eventKey="allCustomers" title="All Customers">
-            <Row>
+            <Row className="mt-3">
               <Col md={12}>
                 <Form>
-                  <Form.Group className="mb-3" controlId="formTitle">
+                  <Form.Group className="mb-3">
                     <Form.Label>Title</Form.Label>
-                    <Col sm={10}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Title"
-                        value={title}
-                        onChange={(e) => {
-                          setTitle(e.target.value);
-                          setErrors({ ...errors, title: '' });
-                        }}
-                        isInvalid={errors.title}
-                      />
-                      {errors.title && <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>}
-                    </Col>
+                    <Form.Control value={title} onChange={(e) => setTitle(e.target.value)} isInvalid={!!errors.title} />
+                    <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>
                   </Form.Group>
-                  <Form.Group className="mb-3" controlId="formMessage">
+                  <Form.Group className="mb-3">
                     <Form.Label>Message</Form.Label>
-                    <Col sm={10}>
-                      <Form.Control
-                        as="textarea"
-                        placeholder="Enter your message"
-                        rows={3}
-                        value={message}
-                        onChange={(e) => {
-                          setMessage(e.target.value);
-                          setErrors({ ...errors, message: '' });
-                        }}
-                        isInvalid={!!errors.message}
-                      />
-                      {errors.message && <Form.Control.Feedback type="invalid">{errors.message}</Form.Control.Feedback>}
-                    </Col>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      isInvalid={!!errors.message}
+                    />
+                    <Form.Control.Feedback type="invalid">{errors.message}</Form.Control.Feedback>
                   </Form.Group>
-                  <Button className="btn btn-primary" type="button" onClick={SendBroadcast} disabled={isButtonDisabled}>
-                    Submit
+                  <Button variant="primary" onClick={SendBroadcast} disabled={isButtonDisabled}>
+                    Send Broadcast
                   </Button>
                 </Form>
               </Col>
             </Row>
           </Tab>
           <Tab eventKey="selectCustomers" title="Select Customers">
-            <Row>
+            <Row className="mt-3">
               <Col md={12}>
                 <Form>
-                  <Form.Group className="mb-3" controlId="formSelectUsers">
-                    <Form.Label>Select Customer</Form.Label>
-
-                    <Col sm={10}>
-                      <Select
-                        isMulti
-                        options={users}
-                        value={selectedUsers}
-                        onChange={(e) => {
-                          setSelectedUsers(e);
-                          setselecterror('');
-                        }}
-                        isInvalid={!!errors.selectedUsers}
-                        placeholder="Select users"
-                      />
-                      {errors.selectedUsers && <Form.Control.Feedback type="invalid">{errors.selectedUsers}</Form.Control.Feedback>}
-                    </Col>
-
+                  <Form.Group className="mb-3">
+                    <Form.Label>Select Users</Form.Label>
+                    <Select isMulti options={users} value={selectedUsers} onChange={setSelectedUsers} isInvalid={!!errors.selectedUsers} />
+                    {errors.selectedUsers && <div className="text-danger mt-1">{errors.selectedUsers}</div>}
                   </Form.Group>
-                  <Form.Group className="mb-3" controlId="formTitle">
+                  <Form.Group className="mb-3">
                     <Form.Label>Title</Form.Label>
-                    <Col sm={10}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Title"
-                        value={title}
-                        onChange={(e) => {
-                          setTitle(e.target.value);
-                          setErrors({ ...errors, title: '' });
-                        }}
-                        isInvalid={!!errors.title}
-                      />
-                      {errors.title && <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>}
-                    </Col>
+                    <Form.Control value={title} onChange={(e) => setTitle(e.target.value)} isInvalid={!!errors.title} />
+                    <Form.Control.Feedback type="invalid">{errors.title}</Form.Control.Feedback>
                   </Form.Group>
-                  <Form.Group className="mb-3" controlId="formMessage">
+                  <Form.Group className="mb-3">
                     <Form.Label>Message</Form.Label>
-                    <Col sm={10}>
-                      <Form.Control
-                        as="textarea"
-                        placeholder="Enter your message"
-                        rows={3}
-                        value={message}
-                        onChange={(e) => {
-                          setMessage(e.target.value);
-                          setErrors({ ...errors, message: '' });
-                        }}
-                        isInvalid={!!errors.message}
-                      />
-                      {errors.message && <Form.Control.Feedback type="invalid">{errors.message}</Form.Control.Feedback>}
-                    </Col>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      isInvalid={!!errors.message}
+                    />
+                    <Form.Control.Feedback type="invalid">{errors.message}</Form.Control.Feedback>
                   </Form.Group>
-                  <Button className="btn btn-primary" type="button" onClick={SendBroadcast} disabled={isButtonDisabled}>
-                    Send
+                  <Button variant="primary" onClick={SendBroadcast} disabled={isButtonDisabled}>
+                    Send Broadcast
                   </Button>
                 </Form>
               </Col>
@@ -224,17 +156,14 @@ function Managebroadcast() {
         </Tabs>
       </Card>
 
-      {/* For notify after Broadcast sent */}
-      <Modal show={showModal} onHide={handleModalClose}>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Broadcast Sent</Modal.Title>
+          <Modal.Title>Success!</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <p>Broadcast has been sent successfully.</p>
-        </Modal.Body>
+        <Modal.Body>Broadcast has been sent successfully!</Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleModalClose}>
-            Okay
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
           </Button>
         </Modal.Footer>
       </Modal>

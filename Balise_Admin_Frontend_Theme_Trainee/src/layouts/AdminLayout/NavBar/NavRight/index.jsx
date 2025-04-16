@@ -27,15 +27,16 @@ const NavRight = () => {
   const [admin, setAdmin] = useState({});
 
   useEffect(() => {
-    const params = {
-      action: 'get_profile',
-      user_id: localStorage.getItem('userId1')
-    };
+    // const params = {
+    //   action: 'get_profile',
+    const id = localStorage.getItem('userId1');
+    // };
     axios
-      .get(`${Url}/get_admin_profile`, { params })
+      .get(`${Url}/api/user/${id}`)
       .then((obj) => {
         const res = obj.data;
-        const adminData = res.data.user_arr;
+        console.log(res);
+        const adminData = res;
         setAdmin(adminData);
       })
       .catch((err) => console.log(err));
@@ -44,20 +45,24 @@ const NavRight = () => {
   return (
     <React.Fragment>
       <ListGroup as="ul" bsPrefix=" " className="navbar-nav ml-auto">
-
-
         <ListGroup.Item as="li" bsPrefix=" ">
           <Dropdown align="end" className="drp-user">
             <Dropdown.Toggle as={Link} variant="link" to="#" id="dropdown-basic">
               <img
                 src={admin.image !== 'NA' ? `${IMAGE_PATH}/${admin.image}` : placeholder}
-                className="img-radius wid-40 " style={{ height: '40px', objectFit: 'cover' }}
+                className="img-radius wid-40 "
+                style={{ height: '40px', objectFit: 'cover' }}
                 alt="User Profile"
               />
             </Dropdown.Toggle>
             <Dropdown.Menu align="end" className="profile-notification">
               <div className="pro-head">
-                <img src={admin.image !== 'NA' ? `${IMAGE_PATH}/${admin.image}` : placeholder} className="img-radius" alt="User Profile" style={{ height: '40px', objectFit: 'cover' }} />
+                <img
+                  src={admin.image !== 'NA' ? `${IMAGE_PATH}/${admin.image}` : placeholder}
+                  className="img-radius"
+                  alt="User Profile"
+                  style={{ height: '40px', objectFit: 'cover' }}
+                />
                 <span>{admin.name}</span>
                 <Link to="#" className="dud-logout" title="Logout">
                   <i className="feather icon-log-out" />
@@ -65,13 +70,13 @@ const NavRight = () => {
               </div>
               <ListGroup as="ul" bsPrefix=" " variant="flush" className="pro-body">
                 <ListGroup.Item as="li" bsPrefix=" ">
-                  <Link to={APP_PREFIX_PATH + "/profile"} className="dropdown-item">
+                  <Link to={APP_PREFIX_PATH + '/profile'} className="dropdown-item">
                     <i className="feather icon-user" /> Profile
                   </Link>
                 </ListGroup.Item>
 
                 <ListGroup.Item as="li" bsPrefix=" ">
-                  <Link to={APP_PREFIX_PATH + "/signin"} className="dropdown-item">
+                  <Link to={APP_PREFIX_PATH + '/signin'} className="dropdown-item">
                     <i className="feather icon-log-out" /> Logout
                   </Link>
                 </ListGroup.Item>
