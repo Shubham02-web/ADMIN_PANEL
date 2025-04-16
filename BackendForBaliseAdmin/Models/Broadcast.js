@@ -1,38 +1,31 @@
-import Sequelize from "sequelize";
+// models/Broadcast.js
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
 
-export default (sequelize) => {
-  const Broadcast = sequelize.define(
-    "Broadcast",
-    {
-      id: {
-        type: Sequelize.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      subject: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      message: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      },
-      user_type: {
-        type: Sequelize.ENUM("all", "specific"),
-        allowNull: false,
-      },
-      selected_users: {
-        type: Sequelize.JSON,
-        allowNull: true,
-      },
+const Broadcast = sequelize.define(
+  "Broadcast",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    {
-      tableName: "broadcasts",
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: false,
-    }
-  );
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    message: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    customerList: {
+      type: DataTypes.JSON,
+      allowNull: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-  return Broadcast;
-};
+export default Broadcast;

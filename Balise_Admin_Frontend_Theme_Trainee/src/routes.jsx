@@ -82,6 +82,11 @@ export const routes = [
       },
       {
         exact: 'true',
+        path: APP_PREFIX_PATH + '/bookings/view/:id',
+        element: lazy(() => import('./views/Pages/ViewBooking'))
+      },
+      {
+        exact: 'true',
         path: APP_PREFIX_PATH + '/view-deleted-customer/:id',
         element: lazy(() => import('./views/Pages/ViewDeletedCustomer'))
       },

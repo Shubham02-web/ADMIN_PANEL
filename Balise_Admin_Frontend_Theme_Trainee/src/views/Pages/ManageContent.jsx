@@ -86,9 +86,9 @@ const ManageContent = () => {
 
   const fetchContent = (contentType, setter) => {
     axios
-      .get(`${Url}/get_content?content_type=${contentTypes[contentType]}`)
+      .get(`${Url}/api/get_content?content_type=${encodeURIComponent(contentType)}`)
       .then((response) => {
-        console.log('API response:', response.data.data[0]);
+        console.log('API response:', response.data);
         if (response.data.data[0].content) {
           setter(response.data.data[0].content); // Access the correct content property
         } else {
@@ -157,7 +157,7 @@ const ManageContent = () => {
     console.log(contentStateToUpdate, 'new', contentTypes[contentType]);
 
     axios
-      .post(Url + '/update_content', {
+      .post(Url + '/api/update_content', {
         contentType: contentTypes[contentType],
         content: contentStateToUpdate
       })

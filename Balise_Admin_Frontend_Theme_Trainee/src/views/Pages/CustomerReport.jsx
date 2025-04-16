@@ -27,21 +27,23 @@ const CustomerReport = () => {
   const handleSubmit = async (values) => {
     const { from_date, to_date } = values;
 
-    const data = new FormData();
-    data.append('s_date', from_date);
-    data.append('e_date', to_date);
+    // const data = new FormData();
+    // data.append('s_date', from_date);
+    // data.append('e_date', to_date);
 
-    console.log('data', data);
+    // console.log('data', data);
 
-    axios
-      .post(`${Url}/get_user_report`, data, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+    const check = await axios
+      .get(`${Url}/api/Tabular/date-range`, {
+        params: {
+          startDate: from_date,
+          endDate: to_date
         }
       })
       .then((response) => {
+        console.log(response.data.data);
         if (response.data.success) {
-          const fectchdata = response.data.data.user_arr;
+          const fectchdata = response.data.data;
 
           setUserDetails(fectchdata); // Assuming `data` contains the array of users
         } else {
@@ -64,7 +66,7 @@ const CustomerReport = () => {
         cancelButtonText: 'Cancel'
       }).then((result) => {
         if (result.isConfirmed) {
-          deleteUser(user_id);
+          deleteUser(id);
         }
       });
     } else if (eventKey === 'View') {
@@ -109,10 +111,10 @@ const CustomerReport = () => {
     const ws = XLSX.utils.json_to_sheet(
       userDetails.map((user, index) => ({
         'S. No.': index + 1,
-        Name: user.name,
-        'Profile Image': user.image ? `${IMAGE_PATH}${user.image}` : `${IMAGE_PATH}image-1720095670109.png`,
+        Name: user.username,
+        'Profile Image': user.profilePicture ? `${Url}/uploads/${user.profilePicture}` : `${Url}/uploads/image-1720095670109.png`,
         Email: user.email,
-        'Create Date & Time': formatDate(user.createtime)
+        'Create Date & Time': formatDate(user.createdAt)
       }))
     );
     const wb = XLSX.utils.book_new();
@@ -123,10 +125,9 @@ const CustomerReport = () => {
   };
 
   // Function to delete user
-  const deleteUser = (userid) => {
-    const data = { user_id: userid };
+  const deleteUser = (id) =>
     axios
-      .post(Url + '/delete_user', data)
+      .post(Url + `/api/customers/register${id}`)
       .then(() => {
         // // Update userDetails state to remove the deleted user
         // setUserDetails(fectchdata);
@@ -134,8 +135,7 @@ const CustomerReport = () => {
       .catch((error) => {
         console.log('Error deleting user:', error);
       });
-    // }
-  };
+  // }
 
   return (
     <>
@@ -238,24 +238,24 @@ const CustomerReport = () => {
               {userDetails && userDetails.length > 0 ? (
                 userDetails.slice(indexOfFirstItem, indexOfLastItem).map((row, index) => (
                   <tr key={index}>
-                    <th scope="row">{index + 1}</th>
-                    <td style={{ textAlign: 'center' }}>
+                    <td scope="row">{index + 1}</td>
+                    <td>
                       <DropdownButton
                         title="Action"
-                        id={`dropdown-${row.user_id}`}
-                        onSelect={(eventKey) => handleActionChange(index, eventKey, row.user_id)}
+                        id={`dropdown-${row.id}`}
+                        onSelect={(eventKey) => handleActionChange(index, eventKey, row.id)}
                         className="btn-action"
                       >
                         <Dropdown.Item
                           eventKey="View"
-                          id={`view-${row.user_id}`}
+                          id={`view-${row.id}`}
                           onClick={() => {
-                            setUserToDelete(row.user_id);
+                            setUserToDelete(row.id);
                           }}
                         >
                           {/* <FaEye className="icon" style={{ marginRight: '8px' }} />
                               View */}
-                          <Link to={`${APP_PREFIX_PATH}/viewcustomer/${encode(row.user_id)}`}>
+                          <Link to={`${APP_PREFIX_PATH}/viewcustomer/${row.id}`}>
                             <FaEye className="icon" style={{ marginRight: '8px' }} />
                             View
                           </Link>
@@ -264,24 +264,24 @@ const CustomerReport = () => {
                         <Dropdown.Item
                           eventKey="delete"
                           onClick={() => {
-                            setUserToDelete(row.user_id);
+                            setUserToDelete(row.id);
                           }}
                         >
                           <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
                         </Dropdown.Item>
                       </DropdownButton>
                     </td>
-                    <td>{row.name}</td>
+                    <td>{row.username}</td>
                     <td>
                       <img
-                        src={row.image ? `${IMAGE_PATH}${row.image}` : `${IMAGE_PATH}image-1720095670109.png`}
+                        src={row.profilePicture ? `${Url}/uploads/${row.profilePicture}` : `${Url}/uploads/image-1720095670109.png`}
                         alt="Profile"
                         style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }}
                       />
                     </td>
                     <td>{row.email}</td>
                     {/* <td>{row.address}</td> */}
-                    <td>{formatDate(new Date(row.createtime))}</td>
+                    <td>{formatDate(new Date(row.createdAt))}</td>
                   </tr>
                 ))
               ) : (

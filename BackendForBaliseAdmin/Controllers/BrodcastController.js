@@ -1,87 +1,122 @@
-import { Op } from "sequelize";
-import BroadcastModel from "../Models/Broadcast.js";
-import UserModel from "../Models/User.js";
+import Customer from "../Models/Customer.js";
+import Broadcast from "../Models/Broadcast.js";
 
 export const sendBroadcast = async (req, res) => {
-  const { subject, message, user_type, select_arr } = req.body;
-  const transaction = await BroadcastModel.sequelize.transaction();
-
   try {
-    // Validation
-    if (!subject || !message || !user_type) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
+    const { title, message, selectedCustomerIds, select_arr, user_type } =
+      req.body;
+
+    if (!title || !message) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Title and message are required." });
     }
 
-    // Validate users if specific type
-    let users = [];
-    if (user_type === "specific") {
-      const userIds = JSON.parse(select_arr || "[]");
-      users = await UserModel.findAll({
-        where: {
-          id: {
-            [Op.in]: userIds,
-          },
-        },
-        transaction,
-      });
+    const customerIds = selectedCustomerIds || select_arr || [];
 
-      if (users.length !== userIds.length) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: "One or more users not found",
-        });
-      }
-    }
+    const isAllCustomers = user_type === "all" || customerIds.length === 0;
 
-    // Create broadcast
-    const broadcast = await BroadcastModel.create(
-      {
-        subject,
-        message,
-        user_type,
-        selected_users:
-          user_type === "specific" ? JSON.parse(select_arr) : null,
-      },
-      { transaction }
-    );
-
-    await transaction.commit();
-
-    // Add your notification sending logic here
-
-    res.json({
-      success: true,
-      message: "Broadcast sent successfully",
-      data: broadcast,
+    console.log("Customer selection:", {
+      selectedCustomerIds,
+      select_arr,
+      user_type,
     });
+
+    let customers;
+    if (isAllCustomers) {
+      customers = await Customer.findAll({
+        attributes: ["id", "username", "email"],
+      });
+    } else {
+      customers = await Customer.findAll({
+        where: { id: customerIds },
+        attributes: ["id", "username", "email"],
+      });
+    }
+
+    if (!customers || customers.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No valid customers found." });
+    }
+
+    await Broadcast.create({
+      title,
+      message,
+      customerList: customers.map((c) => ({
+        id: c.id,
+        name: c.username,
+        email: c.email,
+      })),
+    });
+
+    res
+      .status(201)
+      .json({ success: true, message: "Broadcast sent successfully." });
   } catch (error) {
-    await transaction.rollback();
-    console.error("Broadcast error:", error);
+    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Internal Server Error",
       error: error.message,
     });
   }
 };
-
-export const getCustomers = async (req, res) => {
+export const getAllCustomers = async (req, res) => {
   try {
-    const users = await UserModel.findAll({
-      attributes: ["id", "username", "email"], // Include necessary fields
+    const customers = await Customer.findAll({
+      attributes: ["id", "username", "email"],
     });
-    res.json({
-      success: true,
-      data: users,
+
+    res.status(200).json({ success: true, customers });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+export const getAllBroadcasts = async (req, res) => {
+  try {
+    const broadcasts = await Broadcast.findAll({
+      order: [["createdAt", "DESC"]],
     });
+    res.status(200).json({ success: true, broadcasts });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getBroadcastById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const broadcast = await Broadcast.findByPk(id);
+
+    if (!broadcast) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Broadcast not found" });
+    }
+
+    res.status(200).json({ success: true, broadcast });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteBroadcast = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Broadcast.destroy({ where: { id } });
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Broadcast not found" });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Broadcast deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

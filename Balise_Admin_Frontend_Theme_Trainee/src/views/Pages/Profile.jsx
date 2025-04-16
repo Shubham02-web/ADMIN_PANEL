@@ -18,7 +18,7 @@ const Profile = () => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   const [userDetails, setUserDetails] = useState({});
-  const [old_password, setOldPassword] = useState('')
+  const [old_password, setOldPassword] = useState('');
   const [new_password, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [image, setImage] = useState(null);
@@ -38,23 +38,22 @@ const Profile = () => {
   console.log(imageerror);
 
   const fetchUserDetails = () => {
-    const params = {
-      action: 'get_profile',
-      user_id: localStorage.getItem('userId1')
-    };
-    axios.get(`${Url}/get_admin_profile`, { params }).then((obj) => {
-      const res = obj.data;
-      const userData = res.data.user_arr;
+    // const params = {
+    // action: 'get_profile',
+    const user_id = localStorage.getItem('userId1');
+    // };
+    axios.get(`${Url}/api/user/${user_id}`).then((obj) => {
+      const res = obj.data.user;
+      console.log(res);
+      const userData = res;
       setUserDetails(userData);
-      setPreview(userData.image !== 'NA' ? `${IMAGE_PATH}/${userData.image}` : placeholder);
+      setPreview(userData.image !== 'NA' ? `${Url}/uploads/${userData.image}` : placeholder);
     });
   };
 
   useEffect(() => {
     fetchUserDetails();
   }, []);
-
-  console.log(image);
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
@@ -91,11 +90,12 @@ const Profile = () => {
 
     //get user_id for localstorage
     const user_id = localStorage.getItem('userId1');
+    let id = user_id;
     // Proceed with API call if no errors
-    const data = { user_id, old_password, new_password };
+    const data = { currentPassword: old_password, newPassword: new_password };
     console.warn('password data', data);
     axios
-      .post(Url + '/editpassword', data)
+      .put(Url + `/api/user/${id}`, data)
       .then((res) => {
         if (res.data.success === false) {
           setModalShow(false);
@@ -135,7 +135,7 @@ const Profile = () => {
     setEmailError('');
 
     let hasError = false;
-    if (userDetails.name == '' || userDetails.name == null) {
+    if (userDetails.username == '' || userDetails.username == null) {
       setNameError('Please enter name');
       hasError = true;
     }
@@ -152,18 +152,18 @@ const Profile = () => {
       return;
     }
 
-    const user_id = localStorage.getItem('userId1');
+    const id = localStorage.getItem('userId1');
     const data = new FormData();
-    data.append('name', userDetails.name);
+    data.append('username', userDetails.username);
     data.append('email', userDetails.email);
     // data.append('mobile', userDetails.mobile);
-    data.append('user_id', user_id);
+    data.append('id', id);
     if (image) {
       data.append('image', image);
     }
 
     axios
-      .post(Url + '/editprofile', data)
+      .put(Url + `/api/user/${id}`, data)
       .then((res) => {
         // setModalMessage(res.data.msg);
         // setModalShow(true);
@@ -175,7 +175,7 @@ const Profile = () => {
             title: '',
             text: 'Profile updated successfully',
             confirmButtonText: 'Ok'
-          }).then(() => { });
+          }).then(() => {});
         }
         if (res.data.key == 'Edit') {
           setModalTitle('Update');
@@ -204,7 +204,7 @@ const Profile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'name' && value.length > 50) {
+    if (name === 'username' && value.length > 50) {
       return;
     }
     if (name.length <= 0) {
@@ -215,6 +215,7 @@ const Profile = () => {
       const regex = /^[0-9\b]+$/;
       if (value === '' || regex.test(value)) {
         setUserDetails({ ...userDetails, [name]: value });
+        console.log(userDetails);
         setMobileError('');
       } else {
         setMobileError('Mobile number can only contain numbers');
@@ -250,7 +251,7 @@ const Profile = () => {
               <Col md={4} style={{ margin: 'auto' }}>
                 <div className="d-flex justify-content-center align-items-center">
                   <img
-                    src={userDetails.image ? `${IMAGE_PATH}/${userDetails.image}` : placeholder}
+                    src={userDetails.image ? `${Url}/uploads/${userDetails.image}` : placeholder}
                     style={{
                       width: '100px',
                       height: '100px',
@@ -262,7 +263,7 @@ const Profile = () => {
                     onClick={handleShow}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        handleImageClick(user.image ? `${IMAGE_PATH}/${user.image}` : placeholder);
+                        handleImageClick(user.image ? `${Url}/uploads/${userDetails.image}` : placeholder);
                       }
                     }}
                   />
@@ -302,7 +303,7 @@ const Profile = () => {
                   )}
                 </div>
                 <div className="text-center mt-2">
-                  <small className="fw-bold">{userDetails.name}</small>
+                  <small className="fw-bold">{userDetails.username}</small>
                   <p>{userDetails.email}</p>
                 </div>
               </Col>
@@ -322,9 +323,9 @@ const Profile = () => {
                             <Form.Label>Name</Form.Label>
                             <Form.Control
                               type="text"
-                              name="name"
+                              name="username"
                               placeholder="Enter your name"
-                              value={userDetails.name || ''}
+                              value={userDetails.username || ''}
                               onChange={handleInputChange}
                             />
                             <p style={{ color: 'red' }}>{nameError}</p>

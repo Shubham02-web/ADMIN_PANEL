@@ -1,132 +1,150 @@
 import { React, useEffect, useState } from 'react';
-
-// material-ui
-import { Card, Grid, Typography } from '@mui/material';
+import { Card, Grid, Typography, CircularProgress, Alert } from '@mui/material';
 import { Breadcrumb } from 'react-bootstrap';
 import { Url } from '../../config/constant';
-// project import
-
-// import { gridSpacing } from 'config.js';
 import Chart from 'react-apexcharts';
 import axios from 'axios';
 
-// ==============================|| SAMPLE PAGE ||============================== //
-
 const AnalyticsReport = () => {
-  const [monthlyDetails, setmonthlyDetails] = useState([]);
-   const [yearlyDetails, setyearlyDetails] = useState([]);
-  const fetchManageUserDetails = async () => {
+  const [analyticsData, setAnalyticsData] = useState({
+    monthly: { labels: [], data: [] },
+    yearly: [],
+    demographics: [],
+    loading: true,
+    error: null
+  });
+
+  const currentYear = new Date().getFullYear();
+
+  const fetchAnalytics = async () => {
     try {
-      //    var data={action:"get_users_analytical_report"};
-      const response = await axios.get(`${Url}/users_analytical_report?action=get_users_analytical_report`);
-      const monDetail = response.data.data.month_report_arr;
+      const [monthlyRes, yearlyRes, demographicsRes] = await Promise.all([
+        axios.get(`${Url}/api/analytics/monthly`),
+        axios.get(`${Url}/api/analytics/yearly`),
+        axios.get(`${Url}/api/analytics/demographics`)
+      ]);
 
-       const yearDetail = response.data.data.year_report_arr;
-
-      var newVariable = [];
-      monDetail.forEach(function (obj) {
-        newVariable.push(obj['month_user_arr']);
+      setAnalyticsData({
+        monthly: {
+          labels: monthlyRes.data.labels,
+          data: monthlyRes.data.data.map((item) => item.total)
+        },
+        yearly: yearlyRes.data,
+        demographics: demographicsRes.data,
+        loading: false,
+        error: null
       });
-
-         var newYearVariable = [];
-      yearDetail.forEach(function (obj) {
-        newYearVariable.push(obj['year_user_arr']);
-      });
-
-      setmonthlyDetails(newVariable);
-      setyearlyDetails(newYearVariable);
     } catch (error) {
-      console.error('Error fetching manage user details:', error);
+      console.error('Error fetching analytics:', error);
+      setAnalyticsData((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Failed to load analytics data. Please try again later.'
+      }));
     }
   };
+
   useEffect(() => {
-    fetchManageUserDetails();
+    fetchAnalytics();
   }, []);
 
-  const seriesmonthly = [
-    {
-      name: 'Total Users',
-      data: monthlyDetails
-    }
-  ];
-  const seriesyearly = [
-    {
-      name: 'Total Users',
-      data: yearlyDetails
-    }
-  ];
-
   // Monthly chart configuration
-  const monthly = {
-    chart: {
-      height: 350,
-      type: 'bar',
-      zoom: {
-        enabled: false
+  const monthlyChart = {
+    options: {
+      chart: {
+        type: 'bar',
+        height: 350,
+        toolbar: { show: false }
+      },
+      xaxis: {
+        categories: analyticsData.monthly.labels,
+        title: { text: 'Months' }
+      },
+      yaxis: { title: { text: 'Customers' } },
+      colors: ['#3f51b5'],
+      dataLabels: { enabled: false },
+      plotOptions: {
+        bar: {
+          columnWidth: '70%',
+          distributed: false
+        }
       }
     },
-    plotOptions: {
-      bar: {
-        columnWidth: '50%',
-        distributed: true
+    series: [
+      {
+        name: 'Monthly Customers',
+        data: analyticsData.monthly.data
       }
-    },
-    dataLabels: {
-      enabled: false
-    },
-    xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    },
-    yaxis: {
-      title: {
-        text: 'Users'
-      }
-    },
-
-    fill: {
-      colors: ['#204C91']
-    },
-    legend: {
-      show: false
-    },
-    colors: ['#000000']
+    ]
   };
 
   // Yearly chart configuration
-  const yearly = {
-    chart: {
-      height: 380,
-      type: 'bar',
-      zoom: {
-        enabled: false
+  const yearlyChart = {
+    options: {
+      chart: {
+        type: 'line',
+        height: 350,
+        toolbar: { show: false }
+      },
+      xaxis: {
+        categories: analyticsData.yearly.map((item) => item.year),
+        title: { text: 'Years' }
+      },
+      yaxis: { title: { text: 'Customers' } },
+      colors: ['#e91e63'],
+      stroke: { curve: 'smooth' }
+    },
+    series: [
+      {
+        name: 'Yearly Customers',
+        data: analyticsData.yearly.map((item) => item.total)
       }
-    },
-    plotOptions: {
-      bar: {
-        columnWidth: '50%',
-        distributed: true
-      }
-    },
-    dataLabels: {
-      enabled: false
-    },
-    xaxis: {
-      categories: ['2020', '2021', '2022', '2023', '2024', '2025']
-    },
-    yaxis: {
-      title: {
-        text: 'Users'
-      }
-    },
-
-    fill: {
-      colors: ['#204C91']
-    },
-    legend: {
-      show: false
-    },
-    colors: ['#000000']
+    ]
   };
+
+  // Demographics chart configuration
+  const demographicsChart = {
+    options: {
+      labels: analyticsData.demographics.map((item) => `+${item.countryCode}`),
+      colors: ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'],
+      legend: { position: 'bottom' }
+    },
+    series: analyticsData.demographics.map((item) => item.count)
+  };
+
+  if (analyticsData.loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+        <CircularProgress />
+        <Typography variant="body1" style={{ marginLeft: '16px' }}>
+          Loading Analytics...
+        </Typography>
+      </div>
+    );
+  }
+
+  if (analyticsData.error) {
+    return (
+      <div style={{ padding: '20px' }}>
+        <Alert severity="error" style={{ marginBottom: '20px' }}>
+          {analyticsData.error}
+        </Alert>
+        <button
+          onClick={fetchAnalytics}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#3f51b5',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -144,29 +162,67 @@ const AnalyticsReport = () => {
         variant="h6"
         gutterBottom
       >
-        2024 Monthly Analytical Reports of Customers
+        {currentYear} Monthly Customer Analytics
       </Typography>
 
-      <Grid container>
-        <Grid item xs={12} md={12}>
-          <Card sx={{ marginTop: '10px' }}>
-            <div className="chart p-4">
-              {/* ApexCharts component */}
-              <Chart options={monthly} series={seriesmonthly} type="bar" height={350} />
-            </div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card sx={{ p: 2 }}>
+            <Chart options={monthlyChart.options} series={monthlyChart.series} type="bar" height={350} />
+            <Typography variant="subtitle2" align="center" mt={1}>
+              Monthly Customer Signups
+            </Typography>
           </Card>
         </Grid>
 
-        <Typography className="" style={{ margin: ' 40px auto 30px', color: '#000' }} variant="h6" gutterBottom>
-          2024 Yearly Analytical Reports of Customers
-        </Typography>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ p: 2, height: '100%' }}>
+            <Chart options={demographicsChart.options} series={demographicsChart.series} type="donut" height={300} />
+            <Typography variant="subtitle2" align="center" mt={1}>
+              Country Code Distribution
+            </Typography>
+          </Card>
+        </Grid>
 
-        <Grid item xs={12} md={12}>
-          <Card sx={{ marginTop: '10px' }}>
-            <div className="chart p-4">
-              {/* ApexCharts component */}
-              <Chart options={yearly} series={seriesyearly} type="bar" height={350} />
-            </div>
+        <Grid item xs={12}>
+          <Typography style={{ margin: '40px auto 30px', color: '#000' }} variant="h6" align="center" gutterBottom>
+            Yearly Customer Growth
+          </Typography>
+          <Card sx={{ p: 2 }}>
+            <Chart options={yearlyChart.options} series={yearlyChart.series} type="line" height={350} />
+            <Typography variant="subtitle2" align="center" mt={1}>
+              Customer Growth Over Years
+            </Typography>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Additional Statistics Section */}
+      <Grid container spacing={3} style={{ marginTop: '20px' }}>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Total Customers</Typography>
+            <Typography variant="h4" color="primary">
+              {analyticsData.yearly.reduce((sum, year) => sum + year.total, 0)}
+            </Typography>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Active Customers</Typography>
+            <Typography variant="h4" color="success.main">
+              {analyticsData.yearly.reduce((sum, year) => sum + year.active, 0)}
+            </Typography>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Current Month Signups</Typography>
+            <Typography variant="h4" color="secondary.main">
+              {analyticsData.monthly.data[new Date().getMonth()] || 0}
+            </Typography>
           </Card>
         </Grid>
       </Grid>

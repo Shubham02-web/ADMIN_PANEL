@@ -11,6 +11,9 @@ import bodyParser from "body-parser";
 import MessageRouter from "./Routes/Message.js";
 import broadcastRoutes from "./Routes/Broadcast.js";
 import contentRoutes from "./Routes/Content.js";
+import bookingRoutes from "./Routes/BookingRoute.js";
+import analyticsRoute from "./Routes/analyticsRoute.js";
+import TabulerRoute from "./Routes/userReportRoute.js";
 
 dotenv.config();
 const app = express();
@@ -26,7 +29,11 @@ app.use("/api/categories", CategoryRoutes);
 app.use("/api/Question", QuestionRoutes);
 app.use("/api/messages", MessageRouter);
 app.use("/api/broadcast", broadcastRoutes);
-app.use("/content", contentRoutes);
+app.use("/api", contentRoutes);
+app.use("/bookings", bookingRoutes);
+app.use("/api/analytics", analyticsRoute);
+app.use("/api/Tabular", TabulerRoute);
+
 app.use("/uploads", express.static("uploads"));
 app.get("/", (req, res) => {
   res.send("Welcome to the Admin Panel");

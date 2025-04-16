@@ -1,39 +1,24 @@
-import ContentModel from "../Models/Content.js";
+import Content from "../Models/Content.js";
 
 export const getContent = async (req, res) => {
   try {
     const { content_type } = req.query;
 
-    // Validate content type
-    const validTypes = [0, 1, 2, 3, 4];
-    if (!validTypes.includes(Number(content_type))) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid content type",
-      });
+    if (!content_type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "content_type is required" });
     }
 
-    const content = await ContentModel.findOne({
+    const content = await Content.findAll({
       where: { content_type },
+      limit: 1,
     });
 
-    if (!content) {
-      return res.json({
-        success: true,
-        data: [{ content: "" }], // Return empty content if not found
-      });
-    }
-
-    res.json({
-      success: true,
-      data: [content],
-    });
+    res.json({ success: true, data: content });
   } catch (error) {
-    console.error("Error getting content:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Error fetching content:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -41,39 +26,26 @@ export const updateContent = async (req, res) => {
   try {
     const { contentType, content } = req.body;
 
-    // Validate input
-    if (typeof contentType === "undefined" || !content) {
+    if (!contentType || !content) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "contentType and content are required",
       });
     }
 
-    // Check valid content type
-    const validTypes = [0, 1, 2, 3, 4];
-    if (!validTypes.includes(Number(contentType))) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid content type",
-      });
+    const [updated] = await Content.update(
+      { content },
+      { where: { content_type: contentType } }
+    );
+
+    if (updated === 0) {
+      // Create new if not existing
+      await Content.create({ content_type: contentType, content });
     }
 
-    // Update or create content
-    const [updatedContent] = await ContentModel.upsert({
-      content_type: contentType,
-      content: content,
-    });
-
-    res.json({
-      success: true,
-      message: "Content updated successfully",
-      data: updatedContent,
-    });
+    res.json({ success: true, message: "Content updated successfully" });
   } catch (error) {
     console.error("Error updating content:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

@@ -1,223 +1,183 @@
-import React, { useState } from 'react';
-import { Row, Col, Card, Table, Button, Modal } from 'react-bootstrap';
-import { Dropdown, DropdownButton, Form, FormControl } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Table, Card, Button, Row, Col, Form, Breadcrumb, Dropdown } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaRegTrashAlt } from 'react-icons/fa';
 import TablePagination from '@mui/material/TablePagination';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import { Url, APP_PREFIX_PATH } from '../../config/constant';
 import './main.css';
-import avatar1 from 'assets/images/user/avatar-1.jpg';
-import { Breadcrumb } from 'react-bootstrap';
 
-const ManageBooking = () => {
-  const users = [
-    { id: 1, email: 'test@gmail.com', name: 'Henri', price: '$5000', qty:'3',desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 2, email: 'demo@gmail.com', name: 'John', price: '$5000',qty:'3' , desc:'Lorem ipsum dolor sit amet',createDate: '14-05-2024 05:30:55' },
-    { id: 3, email: 'try@gmail.com', name: 'Maria', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 4, email: 'maria@gmail.com', name: 'Ross', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 5, email: 'alex@gmail.com', name: 'Alex', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 6, email: 'jane@gmail.com', name: 'Jane', price: '$5000',qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 7, email: 'mark@gmail.com', name: 'Mark', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 8, email: 'lucy@gmail.com', name: 'Lucy', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 9, email: 'sam@gmail.com', name: 'Sam', price: '$5000', qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 10, email: 'lisa@gmail.com', name: 'Lisa', price: '$5000', qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 11, email: 'anna@gmail.com', name: 'Anna', price: '$5000',qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 12, email: 'mike@gmail.com', name: 'Mike', price: '$5000', qty:'3' , desc:'Lorem ipsum dolor sit amet',createDate: '14-05-2024 05:30:55' },
-    { id: 13, email: 'peter@gmail.com', name: 'Peter', price: '$5000',qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 14, email: 'emily@gmail.com', name: 'Emily', price: '$5000', qty:'3' , desc:'Lorem ipsum dolor sit amet',createDate: '14-05-2024 05:30:55' },
-    { id: 15, email: 'sara@gmail.com', name: 'Sara', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 16, email: 'steve@gmail.com', name: 'Steve', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet',  createDate: '14-05-2024 05:30:55' },
-    { id: 17, email: 'vicky@gmail.com', name: 'Vicky', price: '$5000',  qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 17, email: 'vicky@gmail.com', name: 'Vicky', price: '$5000',  qty:'3' ,desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' },
-    { id: 18, email: 'jack@gmail.com', name: 'Jack', price: '$5000',  qty:'3' , desc:'Lorem ipsum dolor sit amet',createDate: '14-05-2024 05:30:55' },
-    { id: 19, email: 'sophie@gmail.com', name: 'Sophie', price: '$5000', qty:'3' ,desc:'Lorem ipsum dolor sit amet',  createDate: '14-05-2024 05:30:55' },
-    { id: 20, email: 'chris@gmail.com', name: 'Chris', price: '$5000', qty:'3' , desc:'Lorem ipsum dolor sit amet', createDate: '14-05-2024 05:30:55' }
-  ];
-
+const ManageBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(0);
-  const rowsPerPage = 5;
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
-  const [show, setShow] = useState(false);
-  const [show2, setShow2] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState(null);
+  const [loading, setLoading] = useState(true); // Added loading state
+  const [totalPages, setTotalPages] = useState(0); // Added for pagination
+  const [currentPage, setCurrentPage] = useState(1); // Added for pagination
+  const navigate = useNavigate();
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleSelect = (eventKey, event, user) => {
-    if (eventKey === 'edit') {
-      setSelectedBanner(user);
-      handleShow2();
-    } else {
-      // Handle other dropdown item selections if needed
-      console.log(`Selected item: ${eventKey}`);
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${Url}/bookings`, {
+        params: {
+          page: page + 1,
+          limit: rowsPerPage,
+          search: searchTerm,
+          sort: 'createdAt',
+          order: 'DESC'
+        }
+      });
+      setBookings(response.data.data);
+      setTotalItems(response.data.pagination.totalItems);
+      setTotalPages(response.data.pagination.totalPages);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      Swal.fire('Error!', 'Failed to load bookings', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    filterResults(event.target.value);
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchBookings();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [page, rowsPerPage, searchTerm]);
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axios
+          .delete(`${Url}/bookings/${id}`)
+          .then(() => {
+            Swal.fire('Deleted!', 'Booking has been deleted.', 'success');
+            fetchBookings();
+          })
+          .catch((err) => {
+            console.error('Error deleting booking:', err);
+            Swal.fire('Error!', 'Failed to delete booking.', 'error');
+          });
+      }
+    });
   };
 
-  const handleView = () => {
-    navigate('/view-customer');
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(0);
   };
-
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, users.length - page * rowsPerPage);
-
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-
-  const handleClose2 = () => setShow2(false);
-  const handleShow2 = () => setShow2(true);
 
   return (
     <div>
       <Breadcrumb>
-        <Breadcrumb.Item to="#">
+        <Breadcrumb.Item as={Link} to={`${APP_PREFIX_PATH}/dashboard`}>
           <i className="feather icon-home" />
         </Breadcrumb.Item>
-        <Breadcrumb.Item to="#">Dashboard</Breadcrumb.Item>
-        <Breadcrumb.Item to="#">Manage Booking</Breadcrumb.Item>
+        <Breadcrumb.Item active>Manage Bookings</Breadcrumb.Item>
       </Breadcrumb>
-      <Row>
-        <Col sm={12}>
-          <Card>
-            <Card.Header>
-            <Form className="p-2">
-                <Row className="justify-content-end">
-                  <Col md={3}>
-                    <FormControl type="text" placeholder="Search " className="mr-sm-2" value={searchTerm} onChange={handleSearch} />
-                  </Col>
-                </Row>
-              </Form>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <div className="table-card" style={{ height: '500px' }}>
-                <Table responsive hover>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'center' }}>S.No</th>
-                      <th style={{ textAlign: 'center' }}>Action</th>   
-                      <th style={{ textAlign: 'center' }}>Product Name</th>
-                      <th style={{ textAlign: 'center' }}>Price</th>
-                      <th style={{ textAlign: 'center' }}> Quantity</th>
-                      <th style={{ textAlign: 'center' }}> Description</th>
-                      <th style={{ textAlign: 'center' }}>Create Date & Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(rowsPerPage > 0 ? users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) : users).map((user, index) => (
-                      <tr key={user.id}>
-                        <td style={{ textAlign: 'center' }}>{page * rowsPerPage + index + 1}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <DropdownButton title="Action" id={`dropdown-${user.id}`} onSelect={(eventKey, event) => handleSelect(eventKey, event, user)} className="btn-action">
-                            <Dropdown.Item eventKey="view">
-                              <FaEye className="icon" style={{ marginRight: '8px' }} onClick={handleView} /> View
-                            </Dropdown.Item>
-                            
-                            <Dropdown.Item eventKey="delete">
-                              <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
-                            </Dropdown.Item>
-                          </DropdownButton>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                         {user.name}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                         {user.price}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>{user.qty}</td>
-                        <td style={{ textAlign: 'center' }}>{user.desc}</td>
-                        <td style={{ textAlign: 'center' }}>{user.createDate}</td>
-                      </tr>
-                    ))}
-                    {emptyRows > 0 && (
-                      <tr style={{ height: 53 * emptyRows }}>
-                        <td colSpan={7} />
-                      </tr>
-                    )}
-                  </tbody>
-                </Table>
-                <TablePagination
-                  style={{ textAlign: 'right', marginTop: '10px' }}
-                  labelRowsPerPage="Showing 1 to 20 of 20 entries:"
-                  component="div"
-                  count={users.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  rowsPerPageOptions={[5, 10, 25, 100]}
-                />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-      <Row>
-        <Col sm={12} style={{ textAlign: 'right', marginTop: '10px' }}></Col>
-      </Row>
 
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title style={{ fontSize: '17px' }}>Add Banner</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <div className="mb-3">
-              <img src={avatar1} alt="Logo" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover' }}></img>
-            </div>
-            <div className="mb-3">
-              <label htmlFor="categoryDescription" className="form-label">
-                Banner Image
-              </label>
-              <Form.Control type="file" />
-            </div>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleClose}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Card className="p-4">
+        <Row className="mb-4">
+          <Col style={{ textAlign: 'center' }}>
+            <h2>Booking Management</h2>
+          </Col>
+        </Row>
 
-      {/* edit banner modal */}
-      <Modal show={show2} onHide={handleClose2}>
-        <Modal.Header closeButton>
-          <Modal.Title style={{ fontSize: '17px' }}>Edit Banner</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            {selectedBanner && (
-              <>
-                <div className="mb-3">
-                  <img src={avatar1} alt="Logo" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover' }}></img>
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="categoryDescription" className="form-label">
-                    Banner Image
-                  </label>
-                  <Form.Control type="file" />
-                </div>
-              </>
-            )}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose2}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleClose2}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      {/* edit banner modal */}
+        <Row className="mb-3">
+          <Col md={4}>
+            <Form.Control
+              style={{ textAlign: 'center', alignContent: 'center', justifyContent: 'center' }}
+              type="text"
+              placeholder="Search Bookings"
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+          </Col>
+        </Row>
+
+        {loading ? (
+          <div className="text-center py-4">Loading bookings...</div>
+        ) : (
+          <>
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>B.id</th>
+                  <th>Actions</th>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th>Email</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map((booking) => (
+                  <tr key={booking.id}>
+                    <td>{booking.id}</td>
+                    <td>
+                      <Dropdown>
+                        <Dropdown.Toggle variant="primary" id="dropdown-actions" size="sm">
+                          Actions
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                          <Dropdown.Item onClick={() => navigate(`${APP_PREFIX_PATH}/bookings/view/${booking.id}`)}>
+                            <FaEye className="icon" style={{ marginRight: '8px' }} />
+                            View Details
+                          </Dropdown.Item>
+                          <Dropdown.Item onClick={() => handleDelete(booking.id)} className="text-danger">
+                            <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} />
+                            Delete
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    </td>
+                    <td>{booking.productName}</td>
+                    <td>${booking.price}</td>
+                    <td>{booking.quantity}</td>
+                    <td>${booking.price * booking.quantity}</td>
+                    <td>{booking.email}</td>
+                    <td>{new Date(booking.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+
+            {bookings.length === 0 && <div className="text-center py-4">No bookings found</div>}
+
+            <div className="d-flex justify-content-center">
+              <TablePagination
+                component="div"
+                count={totalItems}
+                page={page}
+                onPageChange={(event, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(event) => {
+                  setRowsPerPage(parseInt(event.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+              />
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 };
 
-export default ManageBooking;
+export default ManageBookings;

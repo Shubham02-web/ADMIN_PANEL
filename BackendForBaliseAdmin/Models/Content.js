@@ -1,32 +1,34 @@
-import Sequelize from "sequelize";
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
 
-export default (sequelize) => {
-  const Content = sequelize.define(
-    "Content",
-    {
-      id: {
-        type: Sequelize.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      content_type: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        unique: true,
-        comment: "0=about us, 1=privacy policy, 2=terms, 3=ios, 4=android",
-      },
-      content: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      },
+const Content = sequelize.define(
+  "Content",
+  {
+    content_type: {
+      type: DataTypes.ENUM(
+        "about us",
+        "privacy policy",
+        "terms and condition",
+        "android app url",
+        "ios app url"
+      ),
+      allowNull: false,
+      unique: true,
     },
-    {
-      tableName: "contents",
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    }
-  );
+    content: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    timestamps: false,
+    tableName: "content",
+    underscored: true,
+  }
+);
 
-  return Content;
-};
+export default Content;

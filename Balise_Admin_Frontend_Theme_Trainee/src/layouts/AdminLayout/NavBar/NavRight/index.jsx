@@ -34,7 +34,7 @@ const NavRight = () => {
     axios
       .get(`${Url}/api/user/${id}`)
       .then((obj) => {
-        const res = obj.data;
+        const res = obj.data.user;
         console.log(res);
         const adminData = res;
         setAdmin(adminData);
@@ -49,7 +49,7 @@ const NavRight = () => {
           <Dropdown align="end" className="drp-user">
             <Dropdown.Toggle as={Link} variant="link" to="#" id="dropdown-basic">
               <img
-                src={admin.image !== 'NA' ? `${IMAGE_PATH}/${admin.image}` : placeholder}
+                src={admin.image !== 'NA' ? `${Url}/uploads/${admin.image}` : placeholder}
                 className="img-radius wid-40 "
                 style={{ height: '40px', objectFit: 'cover' }}
                 alt="User Profile"
@@ -58,7 +58,7 @@ const NavRight = () => {
             <Dropdown.Menu align="end" className="profile-notification">
               <div className="pro-head">
                 <img
-                  src={admin.image !== 'NA' ? `${IMAGE_PATH}/${admin.image}` : placeholder}
+                  src={admin.image !== 'NA' ? `${Url}/uploads/${admin.image}` : placeholder}
                   className="img-radius"
                   alt="User Profile"
                   style={{ height: '40px', objectFit: 'cover' }}
