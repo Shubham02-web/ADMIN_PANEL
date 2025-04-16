@@ -95,7 +95,7 @@ export const getQuestionDetails = async (req, res) => {
 // Update question
 export const updateQuestion = async (req, res) => {
   try {
-    const { question_id, question, answer } = req.body;
+    const { question, answer } = req.body;
 
     const [updatedRows] = await Question.update(
       { question, answer },

@@ -15,7 +15,7 @@ QuestionRoutes.get(
   getQuestionDetails
 );
 QuestionRoutes.post("/add_question", addQuestion);
-QuestionRoutes.post("/update_question", updateQuestion);
+QuestionRoutes.post("/update_question/:question_id", updateQuestion);
 QuestionRoutes.post("/delete_question", deleteQuestion);
 
 export default QuestionRoutes;

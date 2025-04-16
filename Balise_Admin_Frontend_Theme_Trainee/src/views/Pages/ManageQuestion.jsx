@@ -67,7 +67,7 @@ const ManageQuestion = () => {
       });
     }
     if (eventKey === 'edit') {
-      fetchEditDetails(question_id);
+      fetchEditDetails();
     }
   };
 
@@ -80,11 +80,7 @@ const ManageQuestion = () => {
 
       console.log('Question ID before API call:', question_id, typeof question_id);
 
-      const response = await axios.get(`${Url}/get_edit_question_detail`, {
-        params: {
-          question_id: Number(question_id) // Explicitly convert to number
-        }
-      });
+      const response = await axios.get(`${Url}/get_edit_question_detail${question_id}`);
 
       const questionData = response.data.data;
       setEditDetails(questionData);
@@ -122,7 +118,7 @@ const ManageQuestion = () => {
 
   const handleUpdateQuestion = async (values, { setSubmitting }) => {
     try {
-      const response = await axios.post(`${Url}/update_question`, {
+      const response = await axios.post(`${Url}/update_question/${quest}`, {
         question_id: values.question_id,
         question: values.question,
         answer: values.answer
@@ -219,9 +215,9 @@ const ManageQuestion = () => {
                                 View
                               </Link>
                             </Dropdown.Item>
-                            <Dropdown.Item eventKey="edit">
+                            {/* <Dropdown.Item eventKey="edit">
                               <FaEdit className="icon" style={{ marginRight: '8px' }} /> Edit
-                            </Dropdown.Item>
+                            </Dropdown.Item> */}
                             <Dropdown.Item eventKey="delete">
                               <FaRegTrashAlt className="icon" style={{ marginRight: '8px' }} /> Delete
                             </Dropdown.Item>
@@ -229,7 +225,7 @@ const ManageQuestion = () => {
                         </td>
                         <td style={{ textAlign: 'center' }}>{question.question || '-'}</td>
                         <td style={{ textAlign: 'center' }}>{question.answer || '-'}</td>
-                        <td style={{ textAlign: 'center' }}>{formatDate(question.createdAt)}</td>
+                        <td style={{ textAlign: 'center' }}>{formatDate(question.createtime)}</td>
                       </tr>
                     ))}
                   </tbody>
